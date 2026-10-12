@@ -1,3 +1,5 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
 """
 module3/templates/cdk_patterns.py
 ==================================
@@ -64,6 +66,7 @@ from aws_cdk import (
     aws_ec2 as ec2,
     aws_elasticloadbalancingv2 as elbv2,
     aws_logs as logs,
+    Duration,
 )
 from constructs import Construct
 
@@ -85,7 +88,7 @@ class EcsStack(Stack):
             self,
             "Cluster",
             vpc=vpc,
-            container_insights=True,
+            container_insights_v2=ecs.ContainerInsights.ENABLED,
         )
 
         # Task Definition
@@ -129,6 +132,7 @@ class EcsStack(Stack):
             internet_facing=True,
         )
 
+        # Production: add an HTTPS listener with an ACM certificate and redirect HTTP
         listener = lb.add_listener(
             "Listener",
             port=80,
@@ -149,6 +153,7 @@ from aws_cdk import (
     Stack,
     aws_rds as rds,
     aws_ec2 as ec2,
+    Duration,
     RemovalPolicy,
 )
 from constructs import Construct
@@ -179,8 +184,8 @@ class RdsStack(Stack):
         self.database = rds.DatabaseInstance(
             self,
             "Database",
-            engine=rds.DatabaseInstanceEngine.{engine}(
-                version=rds.{engine}EngineVersion.{version}
+            engine=rds.DatabaseInstanceEngine.{engine_method}(
+                version=rds.{version_class}.{version}
             ),
             instance_type=ec2.InstanceType.of(
                 ec2.InstanceClass.{instance_class},
@@ -276,6 +281,7 @@ class S3Stack(Stack):
             encryption=s3.BucketEncryption.S3_MANAGED,
             versioned={versioned},
             block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
+            enforce_ssl=True,
             removal_policy=RemovalPolicy.{removal_policy},
             auto_delete_objects={auto_delete},
         )
@@ -358,9 +364,17 @@ def generate_ecs_stack(
     )
 
 
+# RDS engine name -> (DatabaseInstanceEngine method, EngineVersion class)
+_RDS_ENGINES = {
+    "POSTGRES": ("postgres", "PostgresEngineVersion"),
+    "MYSQL": ("mysql", "MysqlEngineVersion"),
+    "MARIADB": ("maria_db", "MariaDbEngineVersion"),
+}
+
+
 def generate_rds_stack(
     engine: str = "POSTGRES",
-    version: str = "VER_15_4",
+    version: str = "VER_17",
     instance_class: str = "BURSTABLE3",
     instance_size: str = "SMALL",
     multi_az: bool = True,
@@ -369,9 +383,21 @@ def generate_rds_stack(
     deletion_protection: bool = True,
     removal_policy: str = "SNAPSHOT",
 ) -> str:
-    """Generate an RDS database stack."""
+    """Generate an RDS database stack.
+
+    ``engine`` is case-insensitive: POSTGRES, MYSQL or MARIADB. ``version`` is
+    the matching CDK engine-version constant name (default VER_17 for
+    PostgreSQL 17).
+    """
+    try:
+        engine_method, version_class = _RDS_ENGINES[engine.upper()]
+    except KeyError:
+        raise ValueError(
+            f"Unsupported RDS engine: {engine!r} (supported: {', '.join(_RDS_ENGINES)})"
+        ) from None
     return CDK_PATTERNS["rds"].format(
-        engine=engine,
+        engine_method=engine_method,
+        version_class=version_class,
         version=version,
         instance_class=instance_class,
         instance_size=instance_size,
@@ -397,8 +423,8 @@ def generate_elasticache_stack(
         engine_version=engine_version,
         node_type=node_type,
         num_nodes=num_nodes,
-        automatic_failover=str(automatic_failover).lower(),
-        multi_az=str(multi_az).lower(),
+        automatic_failover=str(automatic_failover),
+        multi_az=str(multi_az),
     )
 
 
@@ -418,7 +444,7 @@ def generate_s3_stack(
 
 
 def generate_lambda_stack(
-    runtime: str = "PYTHON_3_11",
+    runtime: str = "PYTHON_3_13",
     handler: str = "index.handler",
     code_path: str = "lambda",
     memory_size: int = 128,

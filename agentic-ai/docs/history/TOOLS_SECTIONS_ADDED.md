@@ -1,3 +1,5 @@
+> Historical development notes from the original module build. Kept for reference; they are not current instructions. See ../../README.md.
+
 # Tools Sections Added to Module 2 Demo
 
 ## Overview

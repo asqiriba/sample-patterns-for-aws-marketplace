@@ -7,14 +7,14 @@
 
 # Confluent Cloud (Act 1). Prebuilt wheels cover macOS and Linux, so
 # librdkafka does not need to be installed separately.
-confluent-kafka>=2.5.0
+confluent-kafka>=2.5,<3
 
 # Databricks (Act 2): Delta Lake writes and Unity Catalog lineage reads.
-databricks-sql-connector>=3.3.0
-databricks-sdk>=0.30.0
+databricks-sql-connector>=3.3,<5
+databricks-sdk>=0.30,<0.147
 
 # Silences a startup warning from the Databricks SQL connector.
-pyarrow>=17.0.0
+pyarrow>=17,<26
 
 # Module 7 knowledge base backends, only if you point at Atlas and Aura
 # instead of a Bedrock knowledge base.

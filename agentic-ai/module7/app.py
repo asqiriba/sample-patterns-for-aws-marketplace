@@ -12,16 +12,38 @@ Endpoints:
     POST /consolidate — consolidate a session history into long-term memory
 
 Default port: 8087 (override with MODULE7_PORT env var).
+
+Binds to 127.0.0.1 by default and has no authentication; local demo use only.
+POST bodies must be application/json (at most 1 MiB), and when bound to
+loopback the Host header must be a loopback name.
 """
 from __future__ import annotations
 
+import ipaddress
 import json
 import os
+import sys
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Any
 
+# Ensure the project root (agentic-ai/) is on the path when running directly
+# as `python module7/app.py`. Module 7 imports its packages lazily.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 PORT = int(os.getenv("MODULE7_PORT", "8087"))
 HOST = os.getenv("MODULE7_HOST", "127.0.0.1")
+MAX_BODY_BYTES = 1024 * 1024
+_LOOPBACK_HOST_NAMES = {"127.0.0.1", "localhost", "[::1]"}
+
+
+def _is_loopback(host: str) -> bool:
+    """True when a bind address only accepts connections from this machine."""
+    if host == "localhost":
+        return True
+    try:
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False
 
 # ---------------------------------------------------------------------------
 # Lazy agent initialization
@@ -51,28 +73,60 @@ class Module7Handler(BaseHTTPRequestHandler):
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
-        self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
         self.wfile.write(body)
 
-    def _read_body(self) -> dict | None:
-        length = int(self.headers.get("Content-Length", 0))
-        raw = self.rfile.read(length).decode() if length else ""
+    def _send_internal_error(self, exc: Exception) -> None:
+        """Generic 500: the exception detail goes to stderr, never to the client."""
+        print(f"[Module7] {type(exc).__name__}: {exc}", file=sys.stderr)
+        self._send_json({"error": "internal server error", "detail": type(exc).__name__}, 500)
+
+    def _host_allowed(self) -> bool:
+        """Refuse non-loopback Host headers when bound to loopback (DNS rebinding)."""
+        if not _is_loopback(str(self.server.server_address[0])):
+            return True
+        host = (self.headers.get("Host") or "").strip().lower()
+        if host.startswith("["):
+            hostname = host.split("]", 1)[0] + "]"
+        else:
+            hostname = host.split(":", 1)[0]
+        if hostname in _LOOPBACK_HOST_NAMES:
+            return True
+        self._send_json({"error": "forbidden host"}, 403)
+        return False
+
+    def _read_json_body(self) -> dict | None:
+        """Return the JSON object body ({} when empty), or send a 4xx and return None."""
+        raw_length = (self.headers.get("Content-Length") or "").strip()
+        if not (raw_length.isascii() and raw_length.isdigit()):
+            self._send_json({"error": "a valid Content-Length header is required"}, 400)
+            return None
+        length = int(raw_length)
+        if length > MAX_BODY_BYTES:
+            self._send_json({"error": f"request body exceeds {MAX_BODY_BYTES} bytes"}, 413)
+            return None
+        # Read the declared body before any further check so the client
+        # always receives the error response instead of a connection reset.
+        raw = self.rfile.read(length)
+        content_type = self.headers.get("Content-Type", "")
+        if content_type.split(";", 1)[0].strip().lower() != "application/json":
+            self._send_json({"error": "Content-Type must be application/json"}, 415)
+            return None
         if not raw:
             return {}
         try:
-            return json.loads(raw)
-        except json.JSONDecodeError:
+            data = json.loads(raw)
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            self._send_json({"error": "invalid JSON body"}, 400)
             return None
-
-    def do_OPTIONS(self) -> None:
-        self.send_response(200)
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
-        self.end_headers()
+        if not isinstance(data, dict):
+            self._send_json({"error": "request body must be a JSON object"}, 400)
+            return None
+        return data
 
     def do_GET(self) -> None:
+        if not self._host_allowed():
+            return
         mock = os.getenv("AGENT_MOCK_MEMORY", "").lower() == "true"
         if self.path == "/ping":
             self._send_json({
@@ -92,9 +146,10 @@ class Module7Handler(BaseHTTPRequestHandler):
             self._send_json({"error": "not found"}, 404)
 
     def do_POST(self) -> None:
-        data = self._read_body()
+        if not self._host_allowed():
+            return
+        data = self._read_json_body()
         if data is None:
-            self._send_json({"error": "invalid JSON body"}, 400)
             return
 
         if self.path == "/invoke":
@@ -133,7 +188,7 @@ class Module7Handler(BaseHTTPRequestHandler):
                 "session_id": session_id,
             })
         except Exception as exc:
-            self._send_json({"error": str(exc)}, 500)
+            self._send_internal_error(exc)
 
     def _handle_consolidate(self, data: dict) -> None:
         history = data.get("session_history")
@@ -158,7 +213,7 @@ class Module7Handler(BaseHTTPRequestHandler):
                 "stored_count": r.stored_count,
             })
         except Exception as exc:
-            self._send_json({"error": str(exc)}, 500)
+            self._send_internal_error(exc)
 
     def log_message(self, format: str, *args: Any) -> None:  # noqa: A002
         pass
@@ -170,6 +225,8 @@ class Module7Handler(BaseHTTPRequestHandler):
 
 def run_server(port: int = PORT, host: str = HOST) -> None:
     server = HTTPServer((host, port), Module7Handler)
+    if not _is_loopback(host):
+        print("  WARNING: no authentication; reachable from your network")
     print(f"""
 ╔══════════════════════════════════════════════════════════════════╗
 ║  Module 7: Agent Memory Systems                                 ║

@@ -271,7 +271,7 @@ class TestModule8AccessControl:
     def test_audit_record_mirrors_module8_evidence_shape(self):
         from module9.identity import build_audit_record
 
-        record = build_audit_record(
+        record = build_audit_record(  # nosec B106 - token_fingerprint is a placeholder label
             "run-test",
             "pipeline-authorization",
             "answer",

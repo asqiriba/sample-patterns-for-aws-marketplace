@@ -24,13 +24,35 @@ import os
 import sys
 
 # Load .env (same loader the demo uses) and force LIVE mode.
-env_path = os.path.join(os.path.dirname(__file__), ".env")
-if os.path.exists(env_path):
-    for line in open(env_path):
-        line = line.strip()
-        if line and not line.startswith("#") and "=" in line:
-            k, v = line.split("=", 1)
-            os.environ.setdefault(k, v)
+def _load_dotenv(env_path=None) -> None:
+    """Load agentic-ai/.env if present; values already in the shell win."""
+    if env_path is None:
+        env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+    if not os.path.exists(env_path):
+        return
+    try:
+        from dotenv import load_dotenv
+    except ImportError:
+        load_dotenv = None
+    if load_dotenv is not None:
+        load_dotenv(env_path, override=False)
+        return
+    # Fallback parser: handles `export KEY=value` and quoted values.
+    with open(env_path) as f:
+        for line in f:
+            line = line.strip()
+            if line.startswith("export "):
+                line = line[len("export "):].lstrip()
+            if line and not line.startswith("#") and "=" in line:
+                k, v = line.split("=", 1)
+                k, v = k.strip(), v.strip()
+                if len(v) >= 2 and v[0] == v[-1] and v[0] in "\"'":
+                    v = v[1:-1]
+                if k:
+                    os.environ.setdefault(k, v)
+
+
+_load_dotenv()
 os.environ.pop("AGENT_MOCK_MEMORY", None)  # never seed the mock backend
 
 from module7.mock.mongo_mock import _ts  # relative-timestamp helper (single source)

@@ -66,6 +66,84 @@ pulumi -C module10/deployment/pulumi up --stack workshop \
 
 Confirm desired, running, and pending counts are zero.
 
+## Network exposure
+
+The Portkey task's security group allows `0.0.0.0/0` on port 8443. The
+AgentCore Runtime runs in `PUBLIC` network mode and reaches Portkey from
+AWS-owned addresses that cannot be predicted, so a CIDR allowlist would break
+cloud mode. The compensating controls are TLS, a bearer service token checked in
+`module10/gateway/hosted.mjs` (a random value the gateway stack keeps in Secrets
+Manager), an auto-stop schedule (two hours by default, at most 12 hours), and a
+public task IP that changes on every start. For production, run the agent in a
+VPC-mode AgentCore Runtime with a private gateway.
+
+## Request-limit demonstration
+
+Section 1 of the cloud demo sends a burst of no-model probes to show the stage's
+request limit. The result is best effort: API Gateway throttling depends on
+token-bucket timing, so the same burst can see no 429 responses at all. The
+deployment record shows 0 of 30 probes throttled in one demo run and 17 of 30 in
+`verify_cloud`. The demo shows "No throttle observed in this burst" when that
+happens.
+Presenter tip: rerun Section 1 for another burst, or show the
+`gateway_probe_throttles` count in the `verify_cloud` report.
+
+## Log retention for AgentCore runtime logs
+
+AgentCore Runtime creates its log groups itself, outside Pulumi, as
+`/aws/bedrock-agentcore/runtimes/<agent_id>-<endpoint_name>` (one per endpoint,
+for example `-DEFAULT` and `-demo`). Their retention is "Never expire". List
+them read-only, then set a retention period on each:
+
+```bash
+aws logs describe-log-groups \
+  --log-group-name-prefix /aws/bedrock-agentcore/runtimes/ \
+  --query 'logGroups[].[logGroupName,retentionInDays]' --output table
+aws logs put-retention-policy --log-group-name <log-group-name> \
+  --retention-in-days 7
+```
+
+See [AgentCore generated runtime observability data](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/observability-runtime-metrics.html)
+for the log group format.
+
+## Known deprecation warnings
+
+`pulumi up` and `pulumi preview` print deprecation warnings from pulumi-aws 7
+for `BucketV2`, `BucketVersioningV2`,
+`BucketServerSideEncryptionConfigurationV2` and
+`BucketLifecycleConfigurationV2`. They are harmless; the resources work as
+deployed. Moving an existing stack to the non-V2 resources needs resource
+aliases so Pulumi does not replace the buckets, so that migration is deferred.
+New stacks and new code should use the non-V2 resources (`aws.s3.Bucket`,
+`aws.s3.BucketVersioning` and so on).
+
+## Dependency advisories
+
+The upstream Portkey gateway at the revision pinned in
+`module10/gateway/setup.py` has known npm advisories in its own lockfile, and no
+fixed upstream revision exists yet. The source stays pinned and unmodified;
+bump `REVISION` once upstream publishes a fix. The gateway's own `@aws-sdk`
+pins in `module10/gateway/package.json` were refreshed in the Module 11
+maintenance release to clear a critical `fast-xml-parser` advisory. A running
+Portkey task picks this up only after its image is rebuilt.
+
+## Updating an existing deployment after this release
+
+The Module 11 maintenance release changes these deployed inputs:
+`module10/server.py`, `module10/requirements.txt`, the
+`module10/gateway/package.json` pins and lockfile, and one lifecycle rule in
+`module10/deployment/pulumi/__main__.py`.
+
+- Without an image rebuild, `pulumi preview` on the application stack shows one
+  in-place update: `artifacts-retention` gains the `demo-manifests` rule
+  (`manifests/` objects expire after 30 days). The gateway stack shows no changes.
+- Rebuilding the images, as in [Updates](#updates), picks up the other changes
+  and produces new digests. The application stack then shows an AgentCore
+  runtime version update, and the gateway stack shows a new ECS task definition
+  revision with an ECS service update.
+
+The current images keep working without a rebuild.
+
 ## Permanent cleanup
 
 Stop Portkey and restore the deployment environment above. Save any evidence you
@@ -98,7 +176,10 @@ credentials when no longer needed.
 
 ## Local checks
 
-After [local setup](../README.md#local):
+After [local setup](../README.md#local), including the one-time
+`.venv/bin/python module10/gateway/setup.py`. The Python tests need its pinned
+Portkey checkout in `module10/.cache/`; without it, 28 tests error with
+"Install the pinned gateway first".
 
 ```bash
 .venv/bin/python -m pip install pytest

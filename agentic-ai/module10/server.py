@@ -110,8 +110,10 @@ def create_server(
     runtime_mode: str = "mock",
     runtime_statuses: list[Any] | None = None,
 ) -> ThreadingHTTPServer:
-    if runtime_mode == "local" and host not in {"127.0.0.1", "localhost"}:
-        raise ValueError("The unauthenticated team-header demo must bind to localhost")
+    # The endpoint has no authentication in any mode, so it never binds beyond
+    # loopback. The deployed cloud path is module10/cloud_app.py, not this server.
+    if host not in {"127.0.0.1", "localhost", "::1"}:
+        raise ValueError("The unauthenticated Module 10 demo endpoint must bind to localhost")
     handler = type(
         "BoundExposureRequestHandler",
         (ExposureRequestHandler,),
@@ -149,6 +151,11 @@ def main() -> None:
     parser.add_argument(
         "--host",
         default=os.getenv("MODULE10_HOST", "127.0.0.1"),
+        help=(
+            "loopback address to bind (127.0.0.1 or localhost); defaults to "
+            "MODULE10_HOST or 127.0.0.1. The endpoint has no authentication, so "
+            "other addresses are refused in every mode"
+        ),
     )
     parser.add_argument(
         "--port",

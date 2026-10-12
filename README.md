@@ -1,6 +1,6 @@
-# Sample Pattners for AWS Marketplace
+# Sample Patterns for AWS Marketplace
 
-Welcome to the AWS Marketplace Sample Patterns repository! This repository contains a collection of sample pattenrs to help
+Welcome to the AWS Marketplace Sample Patterns repository! This repository contains a collection of sample patterns to help
 you build solutions on AWS using 3rd party software. Each of the examples showcases a specific use case and is designed to
 help you get started with software acquired from the AWS Marketplace.
 
@@ -26,7 +26,7 @@ If you have questions, comments or suggestions please use the Issues feature in 
 
 ## Patterns
 
-This following table lists the available patterns, each liked to its respective directory:
+This following table lists the available patterns, each linked to its respective directory:
 
 | Pattern | Description | Implementation Guide | Code |
 | ------- | ----------- | -------------------- | ---- |
@@ -35,7 +35,7 @@ This following table lists the available patterns, each liked to its respective 
 | End to End RAG with Elastic and Amazon Bedrock | Fully automated infrastructure code for an end to end RAG implementation | [Guide](https://aws.amazon.com/marketplace/build-learn/data-analytics/end-to-end-rag-deployment-elastic-cloud?trk=51f363bd-ff3d-4c52-b270-5299b08aaa2b&sc_channel=el) | [Code](solution-templates/elastic/end-to-end-rag-terraform/)
 | Real-time fraud detection with Confluent Cloud on AWS | Identify fraudulent transaction attempts using Confluent Cloud Kafka and Flink, together with AWS RedShift and OpenSearch | [Guide](https://aws.amazon.com/marketplace/build-learn/data-analytics/real-time-fraud-detection-confluent-cloud?trk=51f363bd-ff3d-4c52-b270-5299b08aaa2b&sc_channel=el) | [Code](solution-templates/confluent/automated-fraud-detection/)
 | MongoDB Atlas Microservices API with Semantic Search | Complete microservices architecture with MongoDB Atlas, vector search, and Amazon Bedrock for AI-powered semantic search | [Guide](#) | [Code](solution-templates/mongodb-atlas/microservices-api-semantic-search/)
-|
+| AI Agent Learning Series on AWS | Hands-on modules building a DevOps Companion agent system with AWS Marketplace partners | [Guide](agentic-ai/README.md) | [Code](agentic-ai) |
 
 ## Security
 

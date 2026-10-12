@@ -11,7 +11,7 @@ MODULE 1 CONCEPTS IMPLEMENTED
 
   REASONING LAYER
   ───────────────
-  Claude Sonnet 4 via Amazon Bedrock (Anthropic on AWS Marketplace).
+  Claude Sonnet 4.6 via Amazon Bedrock (Anthropic on AWS Marketplace).
   Optionally replaceable with a Hugging Face model from Bedrock Marketplace
   — the rest of the file is unchanged. This is the model-agnostic property
   of the Strands framework that the module highlights.
@@ -47,7 +47,7 @@ short-term memory concept from the slides.
 
 USAGE
 -----
-    # Default (Claude Sonnet 4 via Bedrock, verbose, 10-turn context window)
+    # Default (Claude Sonnet 4.6 via Bedrock, verbose, 10-turn context window)
     from agent import create_agent
     agent = create_agent()
     response = agent("Give me a health summary of us-east-1")
@@ -195,7 +195,7 @@ def create_agent(
 
     This function is the integration point of all three layers:
 
-      Reasoning    → BedrockModel (Claude Sonnet 4 or HF endpoint)
+      Reasoning    → BedrockModel (Claude Sonnet 4.6 or HF endpoint)
       Orchestration→ Strands Agent + SlidingWindowConversationManager + LoopObserver
       Tools        → ALL_TOOLS (list / describe / health / summary / escalate)
 
@@ -227,9 +227,9 @@ def create_agent(
         print(f"  [Agent] Using Hugging Face model via Bedrock Marketplace")
         print(f"          Endpoint ARN: {hf_endpoint_arn[:60]}...")
     else:
-        # Default: Claude Sonnet 4 via Bedrock (Anthropic on AWS Marketplace)
+        # Default: Claude Sonnet 4.6 via Bedrock (Anthropic on AWS Marketplace)
         model = get_bedrock_model(region=aws_region)
-        print(f"  [Agent] Using Claude Sonnet 4 via Amazon Bedrock (Anthropic)")
+        print(f"  [Agent] Using Claude Sonnet 4.6 via Amazon Bedrock (Anthropic)")
 
     # ── CONTEXT WINDOW MANAGEMENT ────────────────────────────────────────────
     # SlidingWindowConversationManager = the concrete implementation of

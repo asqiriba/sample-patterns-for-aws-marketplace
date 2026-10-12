@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import platform
 import ipaddress
+import shutil
 import signal
 import socket
 import subprocess
@@ -17,6 +18,8 @@ import time
 from threading import current_thread, main_thread
 from urllib.parse import urlsplit
 import urllib.request
+
+from .urls import open_url
 
 VERSION = "0.160.0"
 ROOT = Path(__file__).parent
@@ -37,8 +40,10 @@ def install() -> Path:
     base = f"https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v{VERSION}/"
     with tempfile.TemporaryDirectory(prefix="module10-collector-") as directory:
         downloaded = Path(directory) / archive
-        urllib.request.urlretrieve(base + archive, downloaded)
-        digest = urllib.request.urlopen(base + archive + ".sha256", timeout=30).read().decode().split()[0]
+        with open_url(base + archive, timeout=60) as response, downloaded.open("wb") as out:
+            shutil.copyfileobj(response, out)
+        with open_url(base + archive + ".sha256", timeout=30) as response:
+            digest = response.read().decode().split()[0]
         if hashlib.file_digest(downloaded.open("rb"), "sha256").hexdigest() != digest:
             raise RuntimeError("Collector download did not match the release checksum.")
         with tarfile.open(downloaded) as contents:
@@ -75,7 +80,9 @@ def ready(endpoint):
     request = urllib.request.Request(endpoint.rstrip("/") + "/v1/traces", data=b"",
         headers={"Content-Type": "application/x-protobuf"})
     try:
-        with urllib.request.urlopen(request, timeout=1) as response:
+        # MODULE10_OTLP_ENDPOINT is an HTTP(S) collector base URL (managed_collector and observability check it),
+        # so plain HTTP to a configured remote collector stays allowed; other schemes are refused.
+        with open_url(request, timeout=1, any_http_host=True) as response:
             return response.status == 200
     except OSError:
         return False
@@ -137,10 +144,12 @@ def managed_collector(*, required=False, startup_timeout=20):
                 .replace("endpoint: 127.0.0.1:4318", f"endpoint: 127.0.0.1:{parsed.port or 80}")
                 .replace("endpoint: 127.0.0.1:13133", "endpoint: 127.0.0.1:0"))
             try:
+                # nosemgrep: dangerous-subprocess-use-audit - list args, no shell; the checksum-verified collector from install(), a config written here
                 subprocess.run([str(binary), "validate", "--config", str(config)], check=True,
                     timeout=15, stdout=logs, stderr=logs)
             except (subprocess.SubprocessError, OSError):
                 raise ValueError("Collector configuration validation failed; check the Logz.io settings.") from None
+            # nosemgrep: dangerous-subprocess-use-audit - list args, no shell; the checksum-verified collector from install(), a config written here
             process = subprocess.Popen([str(binary), "--config", str(config)],
                 stdout=logs, stderr=logs, start_new_session=True)
             try:
@@ -179,9 +188,11 @@ def main():
     binary = install()
     config = str(ROOT / "collector.yaml")
     if args.action == "validate":
+        # nosemgrep: dangerous-subprocess-use-audit - list args, no shell; the checksum-verified collector from install(), the packaged config
         subprocess.run([str(binary), "validate", "--config", config], check=True)
     else:
         print("Collector receives logs and traces at http://127.0.0.1:4318", flush=True)
+        # nosemgrep: dangerous-os-exec-audit - the checksum-verified collector from install(), the packaged config
         os.execv(str(binary), [str(binary), "--config", config])
 
 

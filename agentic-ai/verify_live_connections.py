@@ -12,15 +12,35 @@ import os
 import sys
 
 # Load .env
-env_path = os.path.join(os.path.dirname(__file__), ".env")
-if os.path.exists(env_path):
+def _load_dotenv(env_path=None) -> None:
+    """Load agentic-ai/.env if present; values already in the shell win."""
+    if env_path is None:
+        env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+    if not os.path.exists(env_path):
+        return
+    try:
+        from dotenv import load_dotenv
+    except ImportError:
+        load_dotenv = None
+    if load_dotenv is not None:
+        load_dotenv(env_path, override=False)
+        return
+    # Fallback parser: handles `export KEY=value` and quoted values.
     with open(env_path) as f:
         for line in f:
             line = line.strip()
+            if line.startswith("export "):
+                line = line[len("export "):].lstrip()
             if line and not line.startswith("#") and "=" in line:
                 k, v = line.split("=", 1)
-                if k not in os.environ:
+                k, v = k.strip(), v.strip()
+                if len(v) >= 2 and v[0] == v[-1] and v[0] in "\"'":
+                    v = v[1:-1]
+                if k and k not in os.environ:
                     os.environ[k] = v
+
+
+_load_dotenv()
 
 all_ok = True
 _INSECURE_TLS = os.getenv("MODULE7_INSECURE_TLS", "").lower() == "true"

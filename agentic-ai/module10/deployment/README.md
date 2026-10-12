@@ -76,6 +76,14 @@ pulumi -C module10/deployment/pulumi config set manageApiGatewayLogging true \
   --stack workshop --config-file "$MODULE10_DEPLOYMENT_DIR/stack.yaml"
 ```
 
+Stage access logs need the API Gateway CloudWatch role, which is a single
+setting per account and Region. With `manageApiGatewayLogging=true`, this stack
+creates a role and sets it through `aws.apigateway.Account`, which affects every
+API in the account and Region and is kept (`retain_on_delete`) when the stack is
+destroyed. Leave the setting `false` if the command above already returns a role
+ARN, for example one owned by another project. The stage's access logs then
+depend on that role, so they stop if its owner deletes it.
+
 Build and deploy:
 
 ```bash

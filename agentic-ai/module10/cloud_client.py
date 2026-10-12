@@ -9,6 +9,7 @@ from uuid import uuid4
 import boto3
 
 from .models import ReviewResponse
+from .urls import open_url
 
 
 class CloudClient:
@@ -43,7 +44,7 @@ class CloudClient:
         events = []
         self.last_events = events
         try:
-            with urllib.request.urlopen(request, timeout=215) as response:
+            with open_url(request, timeout=215) as response:
                 if "text/event-stream" not in response.headers.get("Content-Type", ""):
                     return ReviewResponse(response.status, json.load(response))
                 event_name = None

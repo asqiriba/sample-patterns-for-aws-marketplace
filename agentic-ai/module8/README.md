@@ -36,6 +36,10 @@ source .venv/bin/activate
 pip install -r module8/requirements.txt
 ```
 
+The core environment (`./INSTALL.sh`, the default family) already includes
+`module8/requirements.txt`, so after `./INSTALL.sh` only `source .venv/bin/activate`
+is needed. See the [environment matrix](../README.md#environments).
+
 Copy the Module 8 values from `.env.example` into `.env` and set:
 
 ```bash
@@ -153,7 +157,7 @@ python -m module8.agent_guard_live check-aws
 # Full live presentation
 AGENT_MOCK_MODE=false python demos/module8_demo.py
 
-# Focused tests
+# Focused tests (core venv, offline)
 python -m pytest tests/test_module8_identity.py -q
 ```
 

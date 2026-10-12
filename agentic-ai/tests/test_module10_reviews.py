@@ -341,7 +341,7 @@ def test_http_contract_and_other_team_cannot_enable_planner(launch, responses_cl
             headers["X-Demo-Team"] = team
         request = urllib.request.Request(url + "/invoke", data=json.dumps(body).encode(), headers=headers)
         try:
-            with urllib.request.urlopen(request, timeout=5) as response:
+            with urllib.request.urlopen(request, timeout=5) as response:  # nosec B310 - the test's own loopback server
                 return response.status, json.load(response)
         except urllib.error.HTTPError as exc:
             return exc.code, json.load(exc)
@@ -365,7 +365,7 @@ def test_http_contract_and_other_team_cannot_enable_planner(launch, responses_cl
         assert code == 200
         assert body["recovery_plan"] is None
         assert body["capabilities"]["recovery_planning"] is False
-        with urllib.request.urlopen(url + "/status", timeout=5) as response:
+        with urllib.request.urlopen(url + "/status", timeout=5) as response:  # nosec B310 - the test's own loopback server
             status = json.load(response)
         assert status["teams"]["platform"]["recovery_planning_enabled"] is True
         assert len(state.requests) == 2

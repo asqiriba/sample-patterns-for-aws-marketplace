@@ -226,6 +226,8 @@ __marimo__/
 setup_live_env.sh
 # Module 9 local virtualenvs
 .venv-m9/
+# Module 10 local virtualenv (when .venv already holds the Python 3.12 core env)
+.venv-m10/
 
 # macOS
 .DS_Store

@@ -128,6 +128,7 @@ def start_collector():
     binary = CACHE / "linux_arm64" / "otelcol-contrib"
     if not binary.is_file():
         raise RuntimeError("Collector must be installed in the image at build time")
+    # nosemgrep: dangerous-subprocess-use-audit - list args, no shell; the checksum-verified collector baked into the image, packaged config
     process = subprocess.Popen([str(binary), "--config", str(Path(__file__).with_name("collector.yaml"))],
         env={**os.environ, **settings}, stdout=subprocess.DEVNULL)
     for _ in range(100):
@@ -206,7 +207,7 @@ class Handler(BaseHTTPRequestHandler):
 if __name__ == "__main__":
     collector = start_collector()
     try:
-        ThreadingHTTPServer(("0.0.0.0", 8080), Handler).serve_forever()
+        ThreadingHTTPServer(("0.0.0.0", 8080), Handler).serve_forever()  # nosec B104 - AgentCore Runtime container: the service requires 0.0.0.0:8080 and fronts it
     finally:
         if collector:
             collector.terminate()

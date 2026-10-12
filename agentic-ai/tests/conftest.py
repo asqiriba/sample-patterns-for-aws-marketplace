@@ -3,15 +3,29 @@
 """
 tests/conftest.py
 ==================
-Shared pytest fixtures for Module 7 tests.
+Shared pytest fixtures for the tests/ suite.
 
-The autouse fixture enforces AGENT_MOCK_MEMORY=true for every test
-and clears the _get_stores() lru_cache to prevent store state from
-leaking between tests.
+Two autouse fixtures apply here:
+
+- isolate_module10_export: for test_module10_* modules only, stops tests
+  from loading real account settings or exporting telemetry to a configured
+  collector (Logz.io / OTLP).
+- mock_memory_env: for every test, enforces AGENT_MOCK_MEMORY=true and
+  clears the Module 7 _get_stores() lru_cache before and after the test so
+  memory store state does not leak between tests.
+
+The agentic-ai/ root is put on sys.path so that a bare `pytest tests/...`
+(the documented form) imports the module packages the same way
+`python -m pytest` does.
 """
 import os
+import sys
 
 import pytest
+
+_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _ROOT not in sys.path:
+    sys.path.insert(0, _ROOT)
 
 
 @pytest.fixture(autouse=True)

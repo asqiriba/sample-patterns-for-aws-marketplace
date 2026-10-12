@@ -13,7 +13,6 @@ Module 1 uses AWS Strands:
     agent = Agent(model=model, tools=tools, system_prompt=prompt)
 
 Module 2 uses LangChain + LangGraph:
-    from langchain.agents import create_tool_calling_agent
     from langgraph.prebuilt import create_react_agent
     agent = create_react_agent(model, tools)
 
@@ -87,7 +86,7 @@ def create_agent(
     
     if verbose:
         print(f"  [Module 2 Agent] Using LangGraph ReAct Agent")
-        print(f"  [Model] Claude Sonnet 4 via Amazon Bedrock")
+        print(f"  [Model] Claude Sonnet 4.6 via Amazon Bedrock")
         print(f"  [Region] {aws_region}")
         print(f"  [Tools] {len(ALL_TOOLS)} repository analysis tools")
         print()
@@ -160,7 +159,7 @@ def create_graph_agent(
     
     if verbose:
         print(f"  [Module 2 Graph Agent] Using LangGraph state machine")
-        print(f"  [Model] ChatBedrock - Claude Sonnet 4")
+        print(f"  [Model] ChatBedrock - Claude Sonnet 4.6")
         print(f"  [Workflow] scan → detect → analyze → map → synthesize")
         print()
     

@@ -17,7 +17,7 @@ from module10.control_planes import (
 from module10.exposure import ExposureService
 from module10.models import ReviewRequest, RuntimeStatus
 from module10.runtime import build_runtime
-from module10.server import start_server
+from module10.server import create_server, start_server
 from module10.telemetry import TraceRecorder
 
 
@@ -193,13 +193,13 @@ def test_http_endpoint_round_trip() -> None:
     )
 
     try:
-        with urllib.request.urlopen(request, timeout=5) as response:
+        with urllib.request.urlopen(request, timeout=5) as response:  # nosec B310 - the test's own loopback server
             body = json.loads(response.read().decode("utf-8"))
         assert response.status == 200
         assert body["status"] == "completed"
         assert body["route"]["attempts"][0]["status_code"] == 200
 
-        with urllib.request.urlopen(
+        with urllib.request.urlopen(  # nosec B310 - the test's own loopback server
             f"http://{host}:{port}/status",
             timeout=5,
         ) as response:
@@ -209,6 +209,15 @@ def test_http_endpoint_round_trip() -> None:
     finally:
         server.shutdown()
         server.server_close()
+
+
+@pytest.mark.parametrize("mode", ["mock", "local", "live"])
+def test_unauthenticated_endpoint_binds_only_to_loopback(mode: str) -> None:
+    with pytest.raises(ValueError, match="must bind to localhost"):
+        create_server(service=object(), host="0.0.0.0", port=0, runtime_mode=mode)  # nosec B104 - asserts the bind rule; nothing binds
+
+    server = create_server(service=object(), host="127.0.0.1", port=0, runtime_mode=mode)
+    server.server_close()
 
 
 def test_runtime_defaults_to_mock_without_external_configuration(

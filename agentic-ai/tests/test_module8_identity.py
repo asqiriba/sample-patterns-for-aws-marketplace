@@ -140,7 +140,7 @@ def test_device_code_poll_handles_pending_then_success(monkeypatch):
     http = FakeHttp(
         post_responses=[
             FakeResponse(403, {"error": "authorization_pending"}),
-            FakeResponse(200, {"access_token": "user-token"}),
+            FakeResponse(200, {"access_token": "user-token"}),  # nosec B105 - dummy token from a fake HTTP response
         ]
     )
 
@@ -153,7 +153,7 @@ def test_device_code_poll_handles_pending_then_success(monkeypatch):
         sleep=lambda _: None,
     )
 
-    assert token == "user-token"
+    assert token == "user-token"  # nosec B105 - dummy token from the test's fake HTTP client
     assert len(http.posts) == 2
 
 
@@ -447,7 +447,7 @@ def test_identity_trace_rejects_missing_workflow_scope():
     from module8.audit.trail import generate_identity_trace
     from module8.identity.context import UserAuthorizationContext
 
-    context = UserAuthorizationContext(
+    context = UserAuthorizationContext(  # nosec B106 - test fixture: token_fingerprint is a placeholder label
         issuer="https://tenant.example.auth0.com/",
         subject="auth0|limited",
         email="limited@example.com",
@@ -548,7 +548,7 @@ def test_section_four_is_credential_isolation():
 def _agent_guard_config(tmp_path, aws_profile=None):
     from module8.agent_guard_live import AgentGuardLiveConfig
 
-    return AgentGuardLiveConfig(
+    return AgentGuardLiveConfig(  # nosec B106 - secret_name is a Secrets Manager name, not a value
         repo_root=tmp_path,
         aws_profile=aws_profile,
         aws_region="us-east-1",
@@ -659,7 +659,7 @@ def test_agent_guard_boundary_requires_isolation_injection_and_audit():
         boundary_evidence_failures,
     )
 
-    evidence = AgentGuardBoundaryEvidence(
+    evidence = AgentGuardBoundaryEvidence(  # nosec B106 - secret_ref is a reference URI, not a value
         agent_process_before_has_secret=False,
         agent_process_after_has_secret=False,
         secret_source="aws://secret/GITHUB_TOKEN",

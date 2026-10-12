@@ -3,7 +3,10 @@
 # Mock mode uses the Python standard library plus the root project's rich
 # dependency. Install this file only when enabling live partner integrations.
 -r requirements-review.txt
-strands-agents[openai]>=1.0.0
+# The live adapter imports only `strands` (module10/agent.py). The
+# strands-agents[openai] extra pins openai<3, which conflicts with
+# openai[bedrock]>=3.10 in requirements-review.txt, so the extra is not used.
+strands-agents>=1.0.0,<2
 portkey-ai>=1.0.0
 opentelemetry-api>=1.20.0
 opentelemetry-sdk>=1.20.0

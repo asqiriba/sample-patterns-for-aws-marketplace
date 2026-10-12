@@ -16,7 +16,25 @@ run with no credentials.
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass, field
+
+# A Unity Catalog name that is safe in SQL text without quoting: letters, digits and underscores, not starting
+# with a digit. Catalog, schema and table names are placed in SQL as identifiers (they cannot be bound
+# parameters), so the live path accepts only names of this form.
+DATABRICKS_IDENTIFIER = re.compile(r"[A-Za-z_][A-Za-z0-9_]{0,254}")
+
+
+def databricks_table(full_name: str) -> str:
+    """`full_name` unchanged if it is catalog.schema.table with three DATABRICKS_IDENTIFIER parts, else
+    ValueError. Every table name that reaches Databricks SQL text goes through this check."""
+    parts = str(full_name).split(".")
+    if len(parts) != 3 or not all(DATABRICKS_IDENTIFIER.fullmatch(p) for p in parts):
+        raise ValueError(
+            "Databricks table names must be catalog.schema.table, each part letters, digits "
+            "and underscores (not starting with a digit)."
+        )
+    return full_name
 
 
 def is_mock_pipeline() -> bool:
@@ -218,4 +236,20 @@ class DatabricksSettings:
                 "Databricks live mode requires environment variables: "
                 + ", ".join(missing)
                 + ". Set AGENT_MOCK_PIPELINE=true to run without Databricks."
+            )
+        invalid = [
+            name
+            for name, value in (
+                ("DATABRICKS_CATALOG", self.catalog),
+                ("DATABRICKS_BRONZE_SCHEMA", self.bronze_schema),
+                ("DATABRICKS_SILVER_SCHEMA", self.silver_schema),
+                ("DATABRICKS_BRONZE_TABLE", self.bronze_table),
+                ("DATABRICKS_SILVER_TABLE", self.silver_table),
+            )
+            if not DATABRICKS_IDENTIFIER.fullmatch(value)
+        ]
+        if invalid:
+            raise ValueError(
+                "Databricks names must be letters, digits and underscores (not starting "
+                "with a digit): " + ", ".join(invalid)
             )

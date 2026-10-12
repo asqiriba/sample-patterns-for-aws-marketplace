@@ -57,7 +57,7 @@ class DeepchecksEvaluator:
     def detect_hallucinations(
         self,
         output: str,
-        context: str,
+        context: str | None = None,
         threshold: float = 0.7,
     ) -> dict[str, Any]:
         """
@@ -67,8 +67,9 @@ class DeepchecksEvaluator:
         ----------
         output : str
             LLM output to check.
-        context : str
-            Context or prompt that generated the output.
+        context : str, optional
+            Context or prompt that generated the output. When omitted, only
+            the context-free checks run.
         threshold : float
             Confidence threshold for hallucination detection.
         
@@ -113,7 +114,7 @@ class DeepchecksEvaluator:
         self,
         output: str,
         context: str | None,
-        reference: str | None,
+        threshold: float,
     ) -> dict[str, Any]:
         """Mock hallucination detection."""
         # Simulate hallucination detection
@@ -237,7 +238,8 @@ class DeepchecksEvaluator:
         context : str, optional
             Context provided to LLM.
         reference : str, optional
-            Reference answer.
+            Reference answer. Reserved for reference-based checks; accepted
+            for API compatibility and currently unused.
         expected_format : str, optional
             Expected output format.
         
@@ -246,7 +248,7 @@ class DeepchecksEvaluator:
         dict
             Complete quality test results.
         """
-        hallucination_results = self.detect_hallucinations(output, context, reference)
+        hallucination_results = self.detect_hallucinations(output, context)
         quality_results = self.validate_output_quality(output, expected_format)
         
         # Combined score

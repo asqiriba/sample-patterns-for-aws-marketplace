@@ -18,6 +18,7 @@ from .agent_runner import AgentRunError
 from .control_planes import IntegrationUnavailable
 from .gateway.setup import REVISION, SOURCE
 from .reviewer import BedrockReviewer
+from .urls import open_url
 
 GATEWAY_DIR = Path(__file__).with_name("gateway")
 
@@ -82,7 +83,7 @@ class LocalPortkeyProcess:
             data=json.dumps({"armed": armed}).encode(),
             headers={"Content-Type": "application/json"},
         )
-        with urllib.request.urlopen(request, timeout=5) as response:
+        with open_url(request, timeout=5) as response:
             return json.load(response)
 
     def console_evidence(self, records=None):
@@ -93,7 +94,7 @@ class LocalPortkeyProcess:
             data=json.dumps(records).encode() if records is not None else None,
             headers={"Content-Type": "application/json", "X-Module10-Console-Token": token},
         )
-        with urllib.request.urlopen(request, timeout=5) as response:
+        with open_url(request, timeout=5) as response:
             return json.load(response)
 
     def close(self) -> None:

@@ -24,6 +24,7 @@ TOOLS
 
 from __future__ import annotations
 
+import fnmatch
 import json
 import os
 import re
@@ -123,6 +124,20 @@ def _is_config_file(filename: str) -> bool:
         "cdk.json", "app.py", "stack.py",
     }
     return filename in config_files or filename.endswith((".tf", ".tfvars"))
+
+
+# File names read_file_content refuses to return, because they usually hold
+# credentials or keys (matched case-insensitively against the base name).
+_SECRET_FILE_PATTERNS = (
+    ".env", ".env.*", "*.pem", "*.key", "*.p12", "*.pfx",
+    "id_rsa*", "id_ed25519*", "credentials", ".npmrc", ".pypirc",
+)
+
+
+def _is_secret_file(filename: str) -> bool:
+    """Check if a file name matches a well-known secret file pattern."""
+    name = filename.lower()
+    return any(fnmatch.fnmatchcase(name, pattern) for pattern in _SECRET_FILE_PATTERNS)
 
 
 # ---------------------------------------------------------------------------
@@ -262,9 +277,14 @@ def _read_file_content_impl(repo_path: str, file_path: str) -> str:
         repo_path_obj = Path(repo_path).resolve()
         full_path = (repo_path_obj / file_path).resolve()
 
-        # Security: ensure file is within repo
-        if not str(full_path).startswith(str(repo_path_obj)):
+        # Security: ensure file is within repo. A path-component check, so a
+        # sibling such as /repo-secrets does not pass for /repo.
+        if not full_path.is_relative_to(repo_path_obj):
             return _wrap({"error": "File path outside repository"}, "read_file_content")
+
+        # Security: never hand likely secret files to the model.
+        if _is_secret_file(full_path.name):
+            return _wrap({"error": "Refusing to read a likely secret file"}, "read_file_content")
 
         if not full_path.exists():
             return _wrap({"error": f"File not found: {file_path}"}, "read_file_content")

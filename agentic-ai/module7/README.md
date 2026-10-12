@@ -166,7 +166,16 @@ targets, so they drop in without changing the agent architecture.
 cd agentic-ai
 source module7/.venv/bin/activate
 AGENT_MOCK_MEMORY=true pytest tests/test_module7_memory.py tests/test_module7_tools.py tests/test_module7_agent.py -v
+
+# Also run the agent tests that invoke Amazon Bedrock (live, opt-in)
+RUN_INTEGRATION_TESTS=true AGENT_MOCK_MEMORY=true pytest tests/test_module7_agent.py -v
 ```
+
+The first command runs offline. Three agent tests
+(`test_agent_invocation_returns_messages`, `test_session_continuity`,
+`test_full_loop_references_memory_source`) call Bedrock, so they are skipped
+unless `RUN_INTEGRATION_TESTS=true` is set. `module7/.venv` is created by
+`./INSTALL.sh module7` from `agentic-ai/`.
 
 ---
 

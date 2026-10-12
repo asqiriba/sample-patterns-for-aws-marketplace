@@ -1,3 +1,5 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
 """
 app.py
 ======
@@ -28,16 +30,16 @@ The agent logic (agent.py) is completely unchanged when deploying to
 AgentCore. This is the same abstraction arc the Module 1 slides describe:
 your agent IS the application; AgentCore is the managed runtime platform.
 
-DEPLOYMENT STEPS
------------------
+DEPLOYMENT STEPS (run every command from agentic-ai/)
+-----------------------------------------------------
   # 1. Install the starter toolkit CLI
   pip install bedrock-agentcore-starter-toolkit
 
   # 2. Configure deployment (run once)
-  agentcore configure --entrypoint app.py --disable-memory
+  agentcore configure --entrypoint module1/app.py --disable-memory
 
   # 3. Test locally (no Docker needed — serves on http://localhost:8080)
-  python app.py
+  AGENT_MOCK_AWS=true python -m module1.app
 
   # 4. Test the local server
   curl -X POST http://localhost:8080/invocations \\
@@ -45,7 +47,7 @@ DEPLOYMENT STEPS
     -d '{"prompt": "Give me a health summary of us-east-1"}'
 
   # 5. Deploy to AWS AgentCore Runtime (CodeBuild, no Docker needed)
-  agentcore launch
+  agentcore deploy          # formerly `agentcore launch`
 
   # 6. Invoke the deployed agent
   agentcore invoke '{"prompt": "List ECS services in us-east-1"}'
@@ -53,22 +55,36 @@ DEPLOYMENT STEPS
   # 7. Invoke via boto3 (for integration with other services)
   #    See: scripts/invoke_agentcore.py
 
+  Note: the Starter Toolkit CLI now reports that it is no longer supported.
+  For new projects AWS recommends the AgentCore CLI (@aws/agentcore):
+  https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-get-started-cli.html
+  These steps were not re-verified by deployment in the Module 11
+  maintenance release.
+
 MOCK MODE
 ----------
 Set AGENT_MOCK_AWS=true to run without real AWS credentials.
 The agent responds with realistic simulated data — good for demos.
 
-  AGENT_MOCK_AWS=true python app.py
+  AGENT_MOCK_AWS=true python -m module1.app
+
+LOCAL FALLBACK SERVER
+----------------------
+Without bedrock-agentcore installed, the plain HTTP fallback binds to
+127.0.0.1 by default and has no authentication; local demo use only.
 """
 
 from __future__ import annotations
 
+import ipaddress
 import json
 import os
+import re
 import sys
 
-# Ensure project root is on the path when running directly
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# Ensure the project root (agentic-ai/, the parent of module1/) is on the
+# path when running directly as `python module1/app.py`.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from module1.agent import create_agent
 
@@ -105,6 +121,11 @@ print("  Agent ready.\n")
 # Request handler (shared between AgentCore and fallback)
 # ---------------------------------------------------------------------------
 
+# ASCII digits only ([0-9], not \d, which also matches non-ASCII digits).
+_REGION_RE = re.compile(r"[a-z]{2}(-gov)?-[a-z]+-[0-9]")
+_INVALID_REGION = {"error": "invalid region"}
+
+
 def _handle(payload: dict) -> dict:
     """
     Process an incoming agent request.
@@ -123,6 +144,10 @@ def _handle(payload: dict) -> dict:
 
     region = payload.get("region")
     if region:
+        # AWS_REGION is process-wide, so only a well-formed Region name may
+        # be written to it.
+        if not isinstance(region, str) or not _REGION_RE.fullmatch(region):
+            return dict(_INVALID_REGION)
         os.environ["AWS_REGION"] = region
 
     # Use a verbose agent for local testing if requested
@@ -139,7 +164,7 @@ def _handle(payload: dict) -> dict:
         "result": str(response),
         "region": os.getenv("AWS_REGION", "us-east-1"),
         "mock_mode": os.getenv("AGENT_MOCK_AWS", "false").lower() == "true",
-        "model": "huggingface-bedrock-marketplace" if _hf_arn else "claude-sonnet-4-bedrock",
+        "model": "huggingface-bedrock-marketplace" if _hf_arn else "claude-sonnet-4-6-bedrock",
     }
 
 
@@ -166,31 +191,100 @@ if _AGENTCORE:
 # Fallback: minimal HTTP server (no AgentCore installed)
 # ---------------------------------------------------------------------------
 
-def _run_fallback(host: str = "127.0.0.1", port: int = 8080) -> None:
-    """Plain HTTP server that mirrors the AgentCore /invocations interface."""
-    from http.server import BaseHTTPRequestHandler, HTTPServer
+MAX_BODY_BYTES = 1024 * 1024
+_LOOPBACK_HOST_NAMES = {"127.0.0.1", "localhost", "[::1]"}
+
+
+def _is_loopback(host: str) -> bool:
+    """True when a bind address only accepts connections from this machine."""
+    if host == "localhost":
+        return True
+    try:
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False
+
+
+def make_handler():
+    """
+    Build the fallback request handler class.
+
+    Binds to 127.0.0.1 by default and has no authentication; local demo use
+    only. POST bodies must be application/json and at most MAX_BODY_BYTES.
+    When bound to loopback, requests whose Host header is not a loopback
+    name are refused (DNS-rebinding protection).
+    """
+    from http.server import BaseHTTPRequestHandler
 
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *_: object) -> None:
             pass  # suppress default access log
 
         def do_GET(self) -> None:
+            if not self._host_allowed():
+                return
             if self.path == "/ping":
                 self._respond(200, {"status": "ok"})
             else:
                 self._respond(404, {"error": "not found"})
 
         def do_POST(self) -> None:
+            if not self._host_allowed():
+                return
             if self.path != "/invocations":
                 self._respond(404, {"error": "not found"})
                 return
-            length = int(self.headers.get("Content-Length", 0))
-            try:
-                body = json.loads(self.rfile.read(length))
-            except json.JSONDecodeError:
-                self._respond(400, {"error": "invalid JSON"})
+            body = self._read_json_body()
+            if body is None:
                 return
-            self._respond(200, _handle(body))
+            try:
+                result = _handle(body)
+            except Exception as exc:  # generic 500: never echo exception text
+                print(f"[Module1] {type(exc).__name__}: {exc}", file=sys.stderr)
+                self._respond(500, {"error": "internal server error", "detail": type(exc).__name__})
+                return
+            self._respond(400 if result == _INVALID_REGION else 200, result)
+
+        def _host_allowed(self) -> bool:
+            """Refuse non-loopback Host headers when bound to loopback."""
+            if not _is_loopback(str(self.server.server_address[0])):
+                return True
+            host = (self.headers.get("Host") or "").strip().lower()
+            if host.startswith("["):
+                hostname = host.split("]", 1)[0] + "]"
+            else:
+                hostname = host.split(":", 1)[0]
+            if hostname in _LOOPBACK_HOST_NAMES:
+                return True
+            self._respond(403, {"error": "forbidden host"})
+            return False
+
+        def _read_json_body(self) -> dict | None:
+            """Return the JSON object body, or send a 4xx and return None."""
+            raw_length = (self.headers.get("Content-Length") or "").strip()
+            if not (raw_length.isascii() and raw_length.isdigit()):
+                self._respond(400, {"error": "a valid Content-Length header is required"})
+                return None
+            length = int(raw_length)
+            if length > MAX_BODY_BYTES:
+                self._respond(413, {"error": f"request body exceeds {MAX_BODY_BYTES} bytes"})
+                return None
+            # Read the declared body before any further check so the client
+            # always receives the error response instead of a connection reset.
+            raw = self.rfile.read(length)
+            content_type = self.headers.get("Content-Type", "")
+            if content_type.split(";", 1)[0].strip().lower() != "application/json":
+                self._respond(415, {"error": "Content-Type must be application/json"})
+                return None
+            try:
+                body = json.loads(raw)
+            except (json.JSONDecodeError, UnicodeDecodeError):
+                self._respond(400, {"error": "invalid JSON"})
+                return None
+            if not isinstance(body, dict):
+                self._respond(400, {"error": "request body must be a JSON object"})
+                return None
+            return body
 
         def _respond(self, code: int, data: dict) -> None:
             payload = json.dumps(data).encode()
@@ -200,7 +294,22 @@ def _run_fallback(host: str = "127.0.0.1", port: int = 8080) -> None:
             self.end_headers()
             self.wfile.write(payload)
 
+    return Handler
+
+
+def _run_fallback(host: str = "127.0.0.1", port: int = 8080) -> None:
+    """
+    Plain HTTP server that mirrors the AgentCore /invocations interface.
+
+    Binds to 127.0.0.1 by default and has no authentication; local demo use only.
+    """
+    from http.server import HTTPServer
+
+    Handler = make_handler()
+
     mock = os.getenv("AGENT_MOCK_AWS", "false").lower() == "true"
+    if not _is_loopback(host):
+        print("  WARNING: no authentication; reachable from your network")
     print(f"  🚀  Infrastructure Agent HTTP server")
     print(f"      http://{host}:{port}/invocations  (POST)")
     print(f"      http://{host}:{port}/ping         (GET)")

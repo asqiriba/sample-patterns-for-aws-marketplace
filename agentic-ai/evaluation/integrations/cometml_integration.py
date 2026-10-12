@@ -28,6 +28,7 @@ class CometMLTracker:
         self,
         api_key: str | None = None,
         project_name: str = "devops-companion-eval",
+        workspace: str | None = None,
     ):
         """
         Initialize Comet ML tracker.
@@ -38,9 +39,14 @@ class CometMLTracker:
             Comet ML API key. Falls back to COMET_API_KEY env var.
         project_name : str
             Project name for organizing experiments.
+        workspace : str, optional
+            Comet workspace that owns the project. Falls back to the
+            COMET_WORKSPACE env var; when unset, Comet uses the API key's
+            default workspace.
         """
         self.api_key = api_key or os.getenv("COMET_API_KEY")
         self.project_name = project_name
+        self.workspace = workspace or os.getenv("COMET_WORKSPACE")
         # Use mock mode only if API key is not provided
         self.mock_mode = not self.api_key
         self.experiments: dict[str, dict] = {}
@@ -96,10 +102,13 @@ class CometMLTracker:
         
         # Real Comet ML integration
         try:
-            experiment = self.comet_ml.Experiment(
-                api_key=self.api_key,
-                project_name=self.project_name,
-            )
+            experiment_kwargs: dict[str, Any] = {
+                "api_key": self.api_key,
+                "project_name": self.project_name,
+            }
+            if self.workspace:
+                experiment_kwargs["workspace"] = self.workspace
+            experiment = self.comet_ml.Experiment(**experiment_kwargs)
             experiment.set_name(experiment_name)
             if tags:
                 experiment.add_tags(tags)
@@ -304,12 +313,20 @@ class CometMLTracker:
         
         self.current_experiment["ended_at"] = datetime.now(timezone.utc).isoformat()
         
+        if self.workspace:
+            dashboard_url = (
+                f"https://www.comet.com/{self.workspace}/{self.project_name}/"
+                f"{self.current_experiment['id']}"
+            )
+        else:
+            dashboard_url = f"https://www.comet.com/{self.project_name}"
+        
         summary = {
             "experiment_id": self.current_experiment["id"],
             "name": self.current_experiment["name"],
             "duration": "calculated in real implementation",
             "metrics_logged": len(self.current_experiment["metrics"]),
-            "dashboard_url": f"https://www.comet.ml/{self.workspace}/{self.project_name}/{self.current_experiment['id']}",
+            "dashboard_url": dashboard_url,
             "mock_mode": self.mock_mode,
         }
         

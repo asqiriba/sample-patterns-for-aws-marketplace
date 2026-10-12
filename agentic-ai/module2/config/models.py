@@ -44,7 +44,7 @@ def get_chat_bedrock_model(
     **kwargs: Any,
 ) -> ChatBedrock:
     """
-    Return a LangChain ChatBedrock model configured for Claude Sonnet 4.
+    Return a LangChain ChatBedrock model configured for Claude Sonnet 4.6.
 
     This is the Module 2 equivalent of Module 1's get_bedrock_model().
     The key difference is that ChatBedrock integrates with LangChain's
@@ -53,8 +53,10 @@ def get_chat_bedrock_model(
     Prerequisites
     -------------
     1. AWS credentials configured (aws configure or AWS_* env vars)
-    2. Bedrock model access enabled for Anthropic in your region:
-       AWS Console → Amazon Bedrock → Model Access → Request Access
+    2. Bedrock model access: serverless models are enabled automatically on
+       first invoke. Anthropic models need a one-time use-case submission
+       per account. See
+       https://docs.aws.amazon.com/bedrock/latest/userguide/model-access.html
 
     Parameters
     ----------

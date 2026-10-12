@@ -29,17 +29,22 @@ import os
 import sys
 from typing import Callable
 
+# Make the agentic-ai root importable for `python demos/module7_demo.py`.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 # ---------------------------------------------------------------------------
 # Auto-load .env from the agentic-ai directory if present
 # ---------------------------------------------------------------------------
 
-def _load_dotenv() -> None:
+def _load_dotenv(env_path: str | os.PathLike | None = None) -> None:
     """Load .env file if present. WARNING: Never commit .env to version control.
     Ensure .env is listed in .gitignore before adding credentials.
+    Values already set in the shell always win over .env.
     """
     here = os.path.dirname(os.path.abspath(__file__))
     root = os.path.dirname(here)
-    env_path = os.path.join(root, ".env")
+    if env_path is None:
+        env_path = os.path.join(root, ".env")
     if os.path.exists(env_path):
         # Warn if .env is not in .gitignore
         gitignore_path = os.path.join(root, ".gitignore")
@@ -48,12 +53,25 @@ def _load_dotenv() -> None:
                 if ".env" not in gi.read():
                     print("⚠️  WARNING: .env exists but '.env' is not in .gitignore. "
                           "Do not commit credentials to version control.", file=sys.stderr)
+        try:
+            from dotenv import load_dotenv
+        except ImportError:
+            load_dotenv = None
+        if load_dotenv is not None:
+            load_dotenv(env_path, override=False)
+            return
+        # Fallback parser: handles `export KEY=value` and quoted values.
         with open(env_path) as f:
             for line in f:
                 line = line.strip()
+                if line.startswith("export "):
+                    line = line[len("export "):].lstrip()
                 if line and not line.startswith("#") and "=" in line:
                     k, v = line.split("=", 1)
-                    if k not in os.environ:
+                    k, v = k.strip(), v.strip()
+                    if len(v) >= 2 and v[0] == v[-1] and v[0] in "\"'":
+                        v = v[1:-1]
+                    if k and k not in os.environ:
                         os.environ[k] = v
 
 _load_dotenv()

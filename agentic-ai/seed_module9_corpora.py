@@ -25,17 +25,33 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 
-def _load_dotenv() -> None:
-    root = os.path.dirname(os.path.abspath(__file__))
-    env_path = os.path.join(root, ".env")
-    if os.path.exists(env_path):
-        with open(env_path) as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith("#") and "=" in line:
-                    k, v = line.split("=", 1)
-                    if k not in os.environ:
-                        os.environ[k] = v
+def _load_dotenv(env_path: str | os.PathLike | None = None) -> None:
+    """Load agentic-ai/.env if present; values already in the shell win."""
+    if env_path is None:
+        root = os.path.dirname(os.path.abspath(__file__))
+        env_path = os.path.join(root, ".env")
+    if not os.path.exists(env_path):
+        return
+    try:
+        from dotenv import load_dotenv
+    except ImportError:
+        load_dotenv = None
+    if load_dotenv is not None:
+        load_dotenv(env_path, override=False)
+        return
+    # Fallback parser: handles `export KEY=value` and quoted values.
+    with open(env_path) as f:
+        for line in f:
+            line = line.strip()
+            if line.startswith("export "):
+                line = line[len("export "):].lstrip()
+            if line and not line.startswith("#") and "=" in line:
+                k, v = line.split("=", 1)
+                k, v = k.strip(), v.strip()
+                if len(v) >= 2 and v[0] == v[-1] and v[0] in "\"'":
+                    v = v[1:-1]
+                if k and k not in os.environ:
+                    os.environ[k] = v
 
 
 def main() -> None:

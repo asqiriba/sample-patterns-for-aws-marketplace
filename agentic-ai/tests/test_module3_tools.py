@@ -62,6 +62,14 @@ def test_generate_cdk_stack_rds():
     assert data["data"]["stack_type"] == "rds"
     assert data["data"]["syntax_valid"] is True
     assert "DatabaseInstance" in data["data"]["code"]
+    assert "PostgresEngineVersion.VER_17" in data["data"]["code"]
+
+
+def test_generate_cdk_stack_rds_unknown_engine():
+    """An unsupported RDS engine returns an error payload, not broken code."""
+    result = generate_cdk_stack.func("rds", json.dumps({"engine": "ORACLE"}))
+    data = json.loads(result)
+    assert "Unsupported RDS engine" in data["data"]["error"]
 
 
 def test_generate_cdk_stack_ecs():

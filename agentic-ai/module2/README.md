@@ -16,6 +16,10 @@ This module demonstrates the **Module 2 framework approach** using LangChain and
 
 ## Quick Start
 
+Run from `agentic-ai/` in the core environment (`./INSTALL.sh`, then
+`source .venv/bin/activate`; see the [environment matrix](../README.md#environments)).
+The agent calls Amazon Bedrock, so the demo needs AWS credentials even in mock mode.
+
 ```bash
 # Mock mode (no real repository needed)
 AGENT_MOCK_REPO=true python demos/module2_demo.py
@@ -35,7 +39,7 @@ AGENT_MOCK_REPO=true pytest tests/test_repo_tools.py -v
 ### Framework: LangChain + LangGraph
 
 **Model Interface**: `ChatBedrock` (LangChain wrapper for Amazon Bedrock)
-**Execution Loop**: `AgentExecutor` or LangGraph state machine
+**Execution Loop**: LangGraph `create_react_agent` (ReAct loop); `module2/workflows/analysis_graph.py` shows an explicit LangGraph state machine
 **Tools**: 5 repository analysis tools
 **Observability**: LangSmith tracing integration
 
@@ -53,8 +57,8 @@ AGENT_MOCK_REPO=true pytest tests/test_repo_tools.py -v
 |--------|-------------------|---------------------|
 | **Framework** | AWS Strands | LangChain + LangGraph |
 | **Model Interface** | `BedrockModel` | `ChatBedrock` |
-| **Agent Pattern** | `Agent` class | `AgentExecutor` or LangGraph |
-| **Memory** | `SlidingWindowConversationManager` | `ConversationBufferMemory` |
+| **Agent Pattern** | `Agent` class | LangGraph `create_react_agent` |
+| **Memory** | `SlidingWindowConversationManager` | LangGraph message state (no checkpointer configured) |
 | **Observability** | Callback handlers | LangSmith tracing |
 | **Use Case** | AWS infrastructure management | Repository analysis |
 | **Tools** | AWS API calls (ECS, EC2, RDS) | Local git operations |
@@ -102,12 +106,12 @@ from module2.agent import create_agent, analyze_repository
 
 # Simple approach
 agent = create_agent(verbose=True)
-result = agent.invoke({"input": "Analyze repository at /path/to/repo"})
-print(result["output"])
+result = agent.invoke({"messages": [("user", "Analyze repository at /path/to/repo")]})
+print(result["messages"][-1].content)
 
 # Convenience function
 results = analyze_repository("/path/to/repo")
-print(results["analysis"])
+print(results["output"])
 ```
 
 ### HTTP Server
@@ -152,7 +156,7 @@ The agent maps common libraries to AWS services:
 
 See `module2/tools/repo_tools.py` for the complete mapping.
 
-## Multi-Agent Integration (Future)
+## Multi-Agent Integration
 
 Module 2 is designed to work with Module 1 in a multi-agent workflow:
 
@@ -160,7 +164,7 @@ Module 2 is designed to work with Module 1 in a multi-agent workflow:
 2. **Module 1 Agent** checks existing AWS resources → identifies gaps
 3. **Orchestrator** coordinates both agents → generates deployment plan
 
-This multi-agent pattern will be covered in Module 4.
+This multi-agent pattern is implemented in Module 4 ([module4/README.md](../module4/README.md)).
 
 ## Project Structure
 
@@ -187,28 +191,33 @@ AGENT_MOCK_REPO=true pytest tests/test_repo_tools.py -v
 # Run specific test
 AGENT_MOCK_REPO=true pytest tests/test_repo_tools.py::test_scan_repository_structure_mock -v
 
-# Test with real repository (requires git repo)
-pytest tests/test_repo_tools.py::test_full_analysis_workflow -v
+# Run the full analysis workflow test (mock data)
+AGENT_MOCK_REPO=true pytest tests/test_repo_tools.py::test_full_analysis_workflow_mock -v
 ```
 
 ## Demo Sections
 
 Run `AGENT_MOCK_REPO=true python demos/module2_demo.py --section N`:
 
-| # | Title | Key Concept |
-|---|-------|-------------|
-| 1 | Framework comparison | LangChain vs Strands architecture |
-| 2 | Repository scan | File structure analysis |
-| 3 | Application detection | Multi-app/monorepo identification |
-| 4 | Dependency analysis | Stack and AWS service mapping |
-| 5 | LangSmith tracing | Observability and debugging |
-| 6 | Full workflow | Complete analysis pipeline |
+| # | Title |
+|---|-------|
+| 1 | LangChain vs AWS Strands |
+| 2 | Agent Identity & System Prompts |
+| 3 | Context Management in LangChain |
+| 4 | Chains: Composable Workflows |
+| 5 | Tools in LangChain |
+| 6 | Tools: LangChain vs Strands |
+| 7 | Repository Structure Scan |
+| 8 | Multi-Application Detection |
+| 9 | Stack Analysis & AWS Service Mapping |
+| 10 | LangSmith Tracing & Observability |
+| 11 | Complete Analysis Pipeline |
 
 ## Next Steps
 
 - **Module 3**: Evaluation and routing patterns
 - **Module 4**: Multi-agent orchestration (Module 1 + Module 2 working together)
-- **Module 7**: Long-term memory with DynamoDB and vector stores
+- **Module 7**: Agent memory with Redis Cloud, MongoDB Atlas and Neo4j Aura
 
 ## License
 

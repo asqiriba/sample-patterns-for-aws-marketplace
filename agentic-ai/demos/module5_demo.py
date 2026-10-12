@@ -189,7 +189,7 @@ class DomainAdapter:
         "  • Geospatial Intelligence Specialist  (Location Service + Mapbox)\n"
         "  • Voice Interaction Specialist  (Deepgram + Transcribe + Polly)\n\n"
         "Change the DomainConfig → get a completely different agent.\n"
-        "The base model (Claude Sonnet 4 via Bedrock) never changes.",
+        "The base model (Claude Sonnet 4.6 via Bedrock) never changes.",
     )
 
     concept("Four levers, one engine, any domain.")

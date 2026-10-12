@@ -34,7 +34,7 @@ def get_chat_bedrock_model(
     region : str, optional
         AWS region for Bedrock. Defaults to AWS_REGION env var or us-east-1.
     model_id : str
-        Bedrock model ID. Default is Claude Sonnet 4.
+        Bedrock model ID. Default is Claude Sonnet 4.6.
     temperature : float
         Sampling temperature (0.0-1.0). Default 0.1 for orchestration.
     max_tokens : int

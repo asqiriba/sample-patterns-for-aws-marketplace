@@ -8,7 +8,7 @@ infrastructure code from repository analysis (Module 2 output) or direct
 infrastructure requirements.
 
 FRAMEWORK: LangChain + LangGraph (consistent with Module 2)
-MODEL: Claude Sonnet 4 via Amazon Bedrock
+MODEL: Claude Sonnet 4.6 via Amazon Bedrock
 PATTERN: ReAct (Reasoning + Acting) with tool calling
 """
 
@@ -86,7 +86,7 @@ def create_agent(
     
     if verbose:
         print(f"  [Module 3 Agent] Using LangGraph ReAct Agent")
-        print(f"  [Model] Claude Sonnet 4 via Amazon Bedrock")
+        print(f"  [Model] Claude Sonnet 4.6 via Amazon Bedrock")
         print(f"  [Region] {aws_region}")
         print(f"  [Tools] {len(ALL_TOOLS)} CDK generation tools")
         print(f"  [Temperature] 0.1 (deterministic code generation)")

@@ -37,4 +37,22 @@ Verify HTTPS, console authentication, and a real model fallback:
   --report "$MODULE10_DEPLOYMENT_DIR/portkey-verification.json" --model
 ```
 
+## Network exposure
+
+The Portkey task's security group allows `0.0.0.0/0` on port 8443. The
+AgentCore Runtime runs in `PUBLIC` network mode and reaches Portkey from
+AWS-owned addresses that cannot be predicted, so a CIDR allowlist would break
+cloud mode. These controls compensate:
+
+- TLS on every connection.
+- A bearer service token, checked in `hosted.mjs` before any request reaches a
+  model provider. It is a random 48-character value that the gateway stack
+  stores in Secrets Manager and injects into the task. The console uses a
+  separate token.
+- An auto-stop schedule: two hours by default, at most 12 hours with `--hours`.
+- A new public task IP on every start.
+
+For production, run the agent in a VPC-mode AgentCore Runtime and reach a
+private gateway instead.
+
 [Costs and cleanup](../deployment/OPERATIONS.md) · [Local demo](../README.md#local)

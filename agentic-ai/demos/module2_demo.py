@@ -104,7 +104,7 @@ def section_1_framework_comparison() -> None:
 from strands import Agent
 from strands.models import BedrockModel
 
-model = BedrockModel(model_id="claude-sonnet-4", region="us-east-1")
+model = BedrockModel(model_id="us.anthropic.claude-sonnet-4-6", region_name="us-east-1")
 agent = Agent(
     model=model,
     system_prompt=SYSTEM_PROMPT,
@@ -117,12 +117,11 @@ response = agent("List ECS services in us-east-1")
     print("\n  MODULE 2 (LangChain) — Repository Analysis Agent")
     code_block("""
 from langchain_aws import ChatBedrock
-from langchain.agents import create_tool_calling_agent, AgentExecutor
+from langgraph.prebuilt import create_react_agent
 
-model = ChatBedrock(model_id="claude-sonnet-4", region_name="us-east-1")
-agent = create_tool_calling_agent(model, tools, prompt)
-executor = AgentExecutor(agent=agent, tools=tools)
-response = executor.invoke({"input": "Analyze repository at /path"})
+model = ChatBedrock(model_id="us.anthropic.claude-sonnet-4-6", region_name="us-east-1")
+agent = create_react_agent(model, tools, prompt=SYSTEM_PROMPT)
+response = agent.invoke({"messages": [("user", "Analyze repository at /path")]})
     """)
 
     concept(
@@ -346,7 +345,7 @@ prompt = ChatPromptTemplate.from_messages([
 ])
 
 # Step 2: Get the model
-model = ChatBedrock(model_id="claude-sonnet-4")
+model = ChatBedrock(model_id="us.anthropic.claude-sonnet-4-6")
 
 # Step 3: Define output parser
 output_parser = StrOutputParser()

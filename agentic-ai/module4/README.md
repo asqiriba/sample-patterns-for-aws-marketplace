@@ -22,9 +22,23 @@ Module 4 demonstrates **multi-agent orchestration** — how to compose specialis
 
 ```bash
 cd agentic-ai/module4
-python3 -m venv .venv
+python3.12 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+```
+
+Or, from `agentic-ai/`, run `./INSTALL.sh module4`, which creates the same
+`module4/.venv` (see the [environment matrix](../README.md#environments)).
+Module 4 uses `langchain-aws>=1.5,<2`, the same range as Modules 7 and 9; the
+earlier `<1.4.0` cap was removed after the full demo was verified on
+langchain-aws 1.8.
+
+### Run the tests (offline)
+
+```bash
+cd agentic-ai
+source module4/.venv/bin/activate
+AGENT_MOCK_MODE=true pytest tests/test_module4_orchestrator.py -v
 ```
 
 ### Run in Mock Mode (sub-agent data simulated, LLM calls are live)
@@ -78,7 +92,7 @@ python demos/module4_demo.py
                     │  ORCHESTRATOR (Module 4)        │
                     │                                  │
                     │  LangGraph ReAct Agent           │
-                    │  Claude Sonnet 4 via Bedrock     │
+                    │  Claude Sonnet 4.6 via Bedrock   │
                     │                                  │
                     │  HTTP Tools:       MCP Tools:    │
                     │   • call_infra      • mcp_analyze│
@@ -263,7 +277,7 @@ Phase 3: Synthesize all results
 ## Next Steps
 
 - **Google A2A**: Implement the full A2A specification (Agent Cards, JSON-RPC, task lifecycle) for production cross-vendor interoperability
-- **Module 7**: Long-term memory with DynamoDB and vector stores
+- **Module 7**: Agent memory with Redis Cloud, MongoDB Atlas and Neo4j Aura
 - **Module 12**: Production monitoring with CloudWatch and X-Ray
 
 ## License

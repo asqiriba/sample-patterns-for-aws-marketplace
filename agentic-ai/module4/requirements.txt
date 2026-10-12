@@ -6,22 +6,17 @@
 #
 # Install:
 #   cd module4
-#   python3 -m venv .venv
+#   python3.12 -m venv .venv
 #   source .venv/bin/activate
 #   pip install -r requirements.txt
 
 # ── Module 4: Orchestrator (LangChain + LangGraph) ──────────────────────────
-langchain>=0.1.0
-langchain-aws>=1.0.0,<1.4.0          # 1.4+ has breaking changes with ChatBedrock tool binding
-langgraph>=0.0.20
+langchain>=1.4,<2
+langchain-aws>=1.5,<2                # verified with langchain-aws 1.8 (Module 11 maintenance)
+langgraph>=1.2,<2
 
 # ── Module 1: Strands Agent Framework ───────────────────────────────────────
-strands-agents>=1.0.0
-strands-agents-tools>=0.1.0
-
-# ── Module 2: Repository Analysis ───────────────────────────────────────────
-langchain-community>=0.0.20
-gitpython>=3.1.40
+strands-agents>=1.57,<2
 
 # ── Module 3: CDK Generation & Evaluation ────────────────────────────────────
 # Note: aws-cdk-lib is large (~50MB). Only needed if running Module 3 live.
@@ -29,10 +24,13 @@ gitpython>=3.1.40
 # constructs>=10.0.0
 
 # ── AWS SDK ──────────────────────────────────────────────────────────────────
-boto3>=1.38.0
+boto3>=1.43,<2
 
 # ── Rich console output (demo formatting) ────────────────────────────────────
-rich>=13.7.0
+rich>=15,<16
 
 # ── Utilities ────────────────────────────────────────────────────────────────
-python-dotenv>=1.0.0
+python-dotenv>=1.2,<2
+
+# ── Testing ──────────────────────────────────────────────────────────────────
+pytest>=9.1,<10

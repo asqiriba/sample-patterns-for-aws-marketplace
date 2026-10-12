@@ -57,11 +57,11 @@ AGENT_MOCK_REPO=true pytest tests/test_evaluation.py -v
 ### Architecture
 
 ```
-Agent Model:  Claude Sonnet 4 (temperature=0.1)
+Agent Model:  Claude Sonnet 4.6 (temperature=0.1)
               ↓
               Generates output
               ↓
-Judge Model:  Claude Opus 4 (temperature=0.0)
+Judge Model:  Claude Opus 4.5 (temperature=0.0)
               ↓
               Evaluates against criteria
               ↓
@@ -273,14 +273,15 @@ from evaluation.integrations.cometml_integration import CometMLTracker
 
 tracker = CometMLTracker(
     project_name="devops-companion-eval",
-    api_key="your-api-key",  # or set COMET_API_KEY env var
+    api_key="your-api-key",      # or set COMET_API_KEY env var
+    workspace="your-workspace",  # or set COMET_WORKSPACE env var
 )
 
 # Start experiment
 exp_id = tracker.start_experiment(
     experiment_name="module3-baseline",
     tags=["module3", "cdk-generation"],
-    parameters={"agent_version": "v1.0", "model": "claude-sonnet-4"},
+    parameters={"agent_version": "v1.0", "model": "us.anthropic.claude-sonnet-4-6"},
 )
 
 # Log metrics
@@ -305,6 +306,10 @@ anomalies = tracker.detect_anomalies(
 summary = tracker.end_experiment()
 print(f"Dashboard: {summary['dashboard_url']}")
 ```
+
+The dashboard URL is `https://www.comet.com/<workspace>/<project>/<experiment>`
+when a workspace is set, otherwise `https://www.comet.com/<project>`. Without
+`COMET_API_KEY` the tracker runs in mock mode.
 
 ## Mock Mode
 
