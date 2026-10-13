@@ -1,0 +1,670 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: >-
+  VM-Series Deployment Stack into existing VPC / GWLB.
+
+# ======================================================================================================================
+#   Parameters / Maapings
+# ======================================================================================================================
+
+# Palo Alto Networks VM-Series Firewall AMI
+#
+# This stack is locked to ONE public AWS Marketplace listing:
+#
+#   VM-Series Next-Gen Virtual Firewall w/ Advanced Security Subs (PAYG)
+#   https://aws.amazon.com/marketplace/pp/prodview-3xtziatyes54i
+#   product code: 806j2of0qy5osgjjixq9gqc6g
+#
+# No private offer is involved. The deploying account must accept that listing's
+# terms once before deploying; this cannot be automated from CloudFormation. The
+# AmiLookup custom resource below is the pre-flight check and fails the stack with
+# the subscription URL if it has not been done.
+#
+# Why this listing specifically: the bundled bootstrap.xml attaches Vulnerability
+# Protection and Anti-Spyware profiles (Advanced Threat Prevention) to five rules,
+# and a URL Filtering profile with local inline categorization (Advanced URL
+# Filtering) to the "Allow all outbound" rule. Only this listing covers both. The
+# cheaper ATP-only listing (prodview-mn63yjbq37n4c) would leave URL Filtering
+# unlicensed. PAYG images self-license on boot, so no auth code is needed.
+
+Parameters:
+# Naming Prefix
+  SecurityNamePrefix:
+    Type: String
+    Description: Prefix to be used for naming / tagging resources
+    ConstraintDescription: 'String for naming.'
+    Default: Security
+
+  PanOSVersion:
+    Type: String
+    Description: >-
+      PAN-OS version prefix used to select the Marketplace AMI (e.g. 11.2 or 11.2.4).
+      The newest matching image is used. Pin a minor version rather than tracking
+      the newest major - bootstrap.xml is a 10.2 config and migrates forward safely
+      to 11.x, but has not been validated against 12.x.
+    AllowedPattern: '^[0-9]+\.[0-9]+(\.[0-9]+(-h[0-9]+)?)?$'
+    ConstraintDescription: Must look like 11.2, 11.2.4 or 11.2.4-h1
+    Default: '11.2'
+
+  VMSeriesInstanceType:
+    Type: String
+    Description: >-
+      EC2 instance type for the VM-Series. Three ENIs are attached (management,
+      data, public), so the type must support at least 3 interfaces. m5.large
+      supports exactly 3 with no headroom and only 2 vCPU for DPDK plus jumbo
+      frames; m5.xlarge is the recommended default for PAN-OS 11.x.
+    AllowedValues:
+      - m5.large
+      - m5.xlarge
+      - m5.2xlarge
+      - c5.xlarge
+      - c5.2xlarge
+    Default: m5.xlarge
+
+  BootstrapXmlUrl:
+    Type: String
+    Description: HTTPS URL the bootstrap Lambda fetches bootstrap.xml from.
+    Default: 'https://ws-assets-prod-iad-r-iad-ed304a55c2ca1aee.s3.us-east-1.amazonaws.com/0cbea0f6-02ef-4f93-bba5-29ce5cf8a349/bootstrap.xml'
+
+# ======================================================================================================================
+#   Metadata
+# ======================================================================================================================
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label:
+          default: "VM-Series Deployment"
+        Parameters:
+          - PanOSVersion
+          - VMSeriesInstanceType
+          - BootstrapXmlUrl
+          - SecurityNamePrefix
+
+    ParameterLabels:
+      PanOSVersion:
+        default: "PAN-OS version prefix for AMI selection"
+      VMSeriesInstanceType:
+        default: "EC2 Instance Type for VM-Series"
+      BootstrapXmlUrl:
+        default: "URL to fetch bootstrap.xml from"
+      SecurityNamePrefix:
+        default: "Prefix to be used in naming resources in Security VPC"
+
+# ======================================================================================================================
+#   Resources
+# ======================================================================================================================
+
+Resources:
+
+# ----------------------------------------------------------------------------------------------------------------------
+#  Gateway Load Balancer Target Group
+# ----------------------------------------------------------------------------------------------------------------------
+
+  GWLBTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Sub "${SecurityNamePrefix}-VM-Series"
+      Port: 6081
+      Protocol: GENEVE
+      HealthCheckPort: 80
+      HealthCheckProtocol: TCP
+      TargetGroupAttributes:
+        - Key: deregistration_delay.timeout_seconds
+          Value: 20
+      VpcId: !ImportValue SecurityVPC
+
+      TargetType: instance
+      Targets:
+        - Id: !Ref VMSeriesInstanceAZ1
+      Tags:
+        - Key: Name
+          Value: "GWLB VM-Series"
+
+  GWLBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref GWLBTargetGroup
+      LoadBalancerArn: !ImportValue GWLB
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Marketplace AMI Lookup
+#
+# Resolves the newest public Marketplace AMI matching the selected product code and
+# PAN-OS version at deploy time, replacing the previous hardcoded private-offer AMI
+# map. Also acts as the subscription pre-flight check: an unsubscribed account sees
+# zero images and gets an actionable error here rather than InvalidAMIID.NotFound
+# later during EC2 instance creation.
+# ----------------------------------------------------------------------------------------------------------------------
+
+  AmiLookupExecutionRole:
+    Type: 'AWS::IAM::Role'
+    Metadata:
+      cfn-lint:
+        config:
+          ignore_checks:
+            - W11  # IAM role should not allow * resource
+      checkov:
+        skip:
+          - id: CKV_AWS_111
+            comment: "ec2:DescribeImages does not support resource-level permissions; * is the only valid resource."
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Path: /
+      Policies:
+        - PolicyName: AmiLookupPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'logs:CreateLogGroup'
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+                Resource: !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:*'
+              - Effect: Allow
+                Action:
+                  - 'ec2:DescribeImages'
+                Resource: '*'
+
+  AmiLookupFunction:
+    Type: 'AWS::Lambda::Function'
+    Metadata:
+      cfn-lint:
+        config:
+          ignore_checks:
+            - W89  # Lambda should be in a VPC
+      checkov:
+        skip:
+          - id: CKV_AWS_117
+            comment: "Lookup function calls the public EC2 API only; VPC placement would require NAT or an endpoint for no benefit."
+          - id: CKV_AWS_116
+            comment: "CloudFormation custom resource; failures are surfaced through cfnresponse and roll the stack back. A DLQ would not be read."
+          - id: CKV_AWS_173
+            comment: "No environment variables are set."
+    Properties:
+      Description: Resolve the public Marketplace VM-Series AMI for this region
+      Handler: index.handler
+      Role: !GetAtt AmiLookupExecutionRole.Arn
+      ReservedConcurrentExecutions: 1
+      Timeout: 60
+      Runtime: python3.12
+      Code:
+        ZipFile: |
+          import boto3
+          import cfnresponse
+
+          def handler(event, context):
+              the_event = event['RequestType']
+              print("The event is: ", str(the_event))
+              response_data = {}
+
+              # Nothing to undo on delete, and a failure here must never block teardown.
+              if the_event == 'Delete':
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data)
+                  return
+
+              try:
+                  props = event['ResourceProperties']
+                  product_code = props['ProductCode']
+                  subscribe_url = props['SubscribeUrl']
+                  version = props['PanOSVersion']
+                  name_filter = f"PA-VM-AWS-{version}*"
+
+                  ec2 = boto3.client('ec2')
+                  paginator = ec2.get_paginator('describe_images')
+                  images = []
+                  for page in paginator.paginate(
+                          Owners=['aws-marketplace'],
+                          Filters=[
+                              {'Name': 'product-code', 'Values': [product_code]},
+                              {'Name': 'product-code.type', 'Values': ['marketplace']},
+                              {'Name': 'name', 'Values': [name_filter]},
+                              {'Name': 'state', 'Values': ['available']},
+                          ]):
+                      images.extend(page['Images'])
+
+                  print(f"Found {len(images)} image(s) for product code {product_code} matching {name_filter}")
+
+                  if not images:
+                      # Distinguish "wrong version" from "not subscribed" so the operator
+                      # is not sent to the Marketplace for a typo in PanOSVersion.
+                      any_version = ec2.describe_images(
+                          Owners=['aws-marketplace'],
+                          Filters=[
+                              {'Name': 'product-code', 'Values': [product_code]},
+                              {'Name': 'product-code.type', 'Values': ['marketplace']},
+                              {'Name': 'state', 'Values': ['available']},
+                          ])['Images']
+                      if any_version:
+                          available = sorted({i['Name'] for i in any_version})[-15:]
+                          raise Exception(
+                              f"No VM-Series AMI matches PAN-OS version '{version}' in "
+                              f"{boto3.session.Session().region_name}. The account IS subscribed. "
+                              f"Recent image names: {available}")
+                      raise Exception(
+                          f"No VM-Series AMI found for product code {product_code}. This almost "
+                          f"always means this AWS account has not accepted the terms of the "
+                          f"Marketplace listing. Subscribe once at {subscribe_url} and retry. "
+                          f"It may also mean the listing is unavailable in this region.")
+
+                  newest = sorted(images, key=lambda i: i['CreationDate'])[-1]
+                  print(f"Selected {newest['ImageId']} ({newest['Name']})")
+                  response_data['ImageId'] = newest['ImageId']
+                  response_data['ImageName'] = newest['Name']
+
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data,
+                                   physicalResourceId=newest['ImageId'])
+              except Exception as e:
+                  print("AMI lookup failed...")
+                  print(str(e))
+                  response_data['Data'] = str(e)
+                  cfnresponse.send(event, context, cfnresponse.FAILED, response_data,
+                                   reason=str(e))
+
+  VMSeriesAmiLookup:
+    Type: 'Custom::AmiLookup'
+    Properties:
+      ServiceToken: !GetAtt AmiLookupFunction.Arn
+      # Locked: VM-Series Next-Gen Virtual Firewall w/ Advanced Security Subs (PAYG)
+      ProductCode: 806j2of0qy5osgjjixq9gqc6g
+      SubscribeUrl: https://aws.amazon.com/marketplace/pp/prodview-3xtziatyes54i
+      PanOSVersion: !Ref PanOSVersion
+
+# ----------------------------------------------------------------------------------------------------------------------
+# VM-Series Bootstrap Resrouces
+# ----------------------------------------------------------------------------------------------------------------------
+
+  BootstrapRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Path: /
+      Policies:
+        - PolicyName: BootstrapRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: 's3:ListBucket'
+                Resource: !Join
+                  - ''
+                  - - !Sub 'arn:${AWS::Partition}:s3:::'
+                    - !Ref SampleS3Bucket
+              - Effect: Allow
+                Action: 's3:GetObject'
+                Resource: !Join
+                  - ''
+                  - - !Sub 'arn:${AWS::Partition}:s3:::'
+                    - !Ref SampleS3Bucket
+                    - /*
+  BootstrapInstanceProfile:
+    Type: 'AWS::IAM::InstanceProfile'
+    Properties:
+      Path: /
+      Roles:
+        - !Ref BootstrapRole
+  AWSLambdaExecutionRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+        Version: 2012-10-17
+      Path: /
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Action:
+                  - 'logs:CreateLogGroup'
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+                Effect: Allow
+                Resource: !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:*'
+            Version: 2012-10-17
+          PolicyName: !Sub '${AWS::Region}-AWSLambda-CW'
+        - PolicyDocument:
+            Statement:
+              - Action:
+                  - 's3:PutObject'
+                  - 's3:DeleteObject'
+                  - 's3:ListBucket'
+                Effect: Allow
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:s3:::${SampleS3Bucket}/*'
+                  - !Sub 'arn:${AWS::Partition}:s3:::${SampleS3Bucket}'
+            Version: 2012-10-17
+          PolicyName: !Sub '${AWS::Region}-AWSLambda-S3'
+      # RoleName intentionally omitted: a fixed, region-scoped name collides with
+      # AlreadyExists on a second deployment into the same account and region.
+  SampleS3Bucket:
+    Type: 'AWS::S3::Bucket'
+    Metadata:
+      cfn-lint:
+        config:
+          ignore_checks:
+            - W3045  # S3 bucket should have access logging configured
+            - W3011  # S3 bucket should have versioning enabled
+      guard:
+        SuppressedRules:
+          - S3_BUCKET_LOGGING_ENABLED
+          - S3_BUCKET_VERSIONING_ENABLED
+      checkov:
+        skip:
+          - id: CKV_AWS_18
+            comment: "Temporary bootstrap bucket - created during stack deployment, populated with VM-Series firewall configuration files, then automatically deleted when CloudFormation stack is torn down. No persistent data stored. Access logging not required for ephemeral workshop resources with lifecycle < 4 hours."
+          - id: CKV_AWS_21
+            comment: "Temporary bootstrap bucket - no versioning required. Bucket contents are immutable once populated by Lambda and deleted on stack teardown. No accidental deletion risk or version recovery needed for ephemeral workshop resources."
+    Properties:
+      BucketName: !Select 
+        - '2'
+        - !Split 
+          - /
+          - !Ref 'AWS::StackId'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+  LambdaS3CustomResource:
+    Type: 'Custom::S3CustomResource'
+    DependsOn: AWSLambdaExecutionRole
+    Properties:
+      ServiceToken: !Ref AWSLambdaFunctionVersion
+      the_bucket: !Ref SampleS3Bucket
+      FrontendGwlbeAz1: !ImportValue FrontendGwlbeAz1
+      BootstrapXmlUrl: !Ref BootstrapXmlUrl
+      dirs_to_create:
+        - config
+        - content
+        - license
+        - software
+
+
+  AWSLambdaFunctionVersion:
+    Type: 'AWS::Lambda::Version'
+    Properties:
+      FunctionName: !Ref AWSLambdaFunction
+
+  AWSLambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Description: Create VM-Series bootstrap bucket from Jam source
+      # FunctionName intentionally omitted: see RoleName note above.
+      Handler: index.handler
+      Role: !GetAtt 
+        - AWSLambdaExecutionRole
+        - Arn
+      ReservedConcurrentExecutions: 1
+      Timeout: 360
+      Runtime: python3.12
+      Code:
+        ZipFile: |
+          import boto3
+          import cfnresponse
+          import textwrap
+
+          def handler(event, context):
+              # Init ...
+              the_event = event['RequestType']
+              print("The event is: ", str(the_event))
+              response_data = {}
+              s_3 = boto3.client('s3')
+
+              # Retrieve parameters
+              the_bucket = event['ResourceProperties']['the_bucket']
+              dirs_to_create = event['ResourceProperties']['dirs_to_create']
+              frontend_gwlbe_az1 = event['ResourceProperties']['FrontendGwlbeAz1']
+              bootstrap_url = event['ResourceProperties']['BootstrapXmlUrl']
+
+              try:
+                  if the_event in ('Create', 'Update'):
+                      print("Requested folders: ", str(dirs_to_create))
+                      for dir_name in dirs_to_create:
+                          print("Creating: ", str(dir_name))
+                          s_3.put_object(Bucket=the_bucket,
+                                          Key=(dir_name
+                                              + '/'))
+
+                      # Create init-cfg.txt dynamically. The PAYG Marketplace image
+                      # self-licenses on boot via its instance product code, so the
+                      # authcodes line must be present but empty. There is no BYOL path.
+                      authcodes_value = ""
+                      
+                      init_cfg_content = textwrap.dedent(f"""\
+                          type=dhcp-client
+                          hostname=OnlineStore-NGFW
+                          ip-address=
+                          default-gateway=
+                          netmask=
+                          ipv6-default-gateway=
+                          vm-auth-key=
+                          panorama-server=
+                          panorama-server-2=
+                          tplname=
+                          dgname=
+                          dns-primary=8.8.8.8
+                          dns-secondary=8.8.4.4
+                          authcodes={authcodes_value}
+                          plugin-op-commands=aws-gwlb-inspect:enable,aws-gwlb-overlay-routing:enable,aws-gwlb-associate-vpce:{frontend_gwlbe_az1}@ethernet1/1.1
+                          op-command-modes=jumbo-frame,mgmt-interface-swap
+                          op-cmd-dpdk-pkt-io=on
+                          dhcp-send-hostname=yes
+                          dhcp-send-client-id=yes
+                          dhcp-accept-server-hostname=no
+                          dhcp-accept-server-domain=yes
+                      """)
+                      s_3.put_object(Body=init_cfg_content, Bucket=the_bucket, Key='config/init-cfg.txt')
+
+                      import urllib.request
+                      import time
+                      for attempt in range(3):
+                          try:
+                              bootstrap_response = urllib.request.urlopen(bootstrap_url, timeout=30)
+                              bootstrap_content = bootstrap_response.read()
+                              break
+                          except Exception as e:
+                              if attempt < 2:
+                                  print(f"Bootstrap fetch attempt {attempt + 1} failed: {e}. Retrying in 5s...")
+                                  time.sleep(5)
+                              else:
+                                  raise Exception(f"Failed to fetch bootstrap.xml after 3 attempts: {e}")
+                      s_3.put_object(Body=bootstrap_content, Bucket=the_bucket, Key='config/bootstrap.xml')
+                      
+                      # No /license/authcodes file is written: the firewall retrieves its
+                      # licence from AWS Marketplace using the instance product code.
+                      print("Bootstrap written (PAYG Marketplace licensing).")
+
+                  elif the_event == 'Delete':
+                      print("Deleting S3 content...")
+                      try:
+                          b_operator = boto3.resource('s3')
+                          b_operator.Bucket(str(the_bucket)).objects.all().delete()
+                      except Exception as e:
+                          # Best-effort cleanup: bucket may already be deleted during rollback.
+                          # Custom resources must return SUCCESS on Delete to avoid blocking
+                          # stack deletion/rollback.
+                          print(f"S3 cleanup skipped (bucket may already be deleted): {e}")
+                  # Everything OK... send the signal back
+                  print("Operation successful!")
+                  cfnresponse.send(event,
+                                  context,
+                                  cfnresponse.SUCCESS,
+                                  response_data)
+              except Exception as e:
+                  print("Operation failed...")
+                  print(str(e))
+                  response_data['Data'] = str(e)
+                  # On Delete, always return SUCCESS to avoid blocking stack teardown
+                  if the_event == 'Delete':
+                      print("Returning SUCCESS despite error (Delete must not block stack cleanup)")
+                      cfnresponse.send(event,
+                                      context,
+                                      cfnresponse.SUCCESS,
+                                      response_data)
+                  else:
+                      cfnresponse.send(event,
+                                      context,
+                                      cfnresponse.FAILED,
+                                      response_data)
+
+# ----------------------------------------------------------------------------------------------------------------------
+# VM-Series Deployment
+# ----------------------------------------------------------------------------------------------------------------------
+
+  VMSeriesManagementENIAZ1:
+    Type: AWS::EC2::NetworkInterface
+    Properties:
+      Description: VM-Series Management
+      GroupSet: [ !ImportValue VMSeriesManagementSecurityGroup ]
+      SubnetId: !ImportValue NATGWSubnetAZ1
+      Tags:
+        - Key: Name
+          Value: !Sub "${SecurityNamePrefix} VM-Series Management"
+
+  VMSeriesManagementEIPAZ1:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: Name
+          Value: !Sub "${SecurityNamePrefix} VM-Series Management"
+
+  VMSeriesManagementEIPAssociationAZ1:
+    Type: AWS::EC2::EIPAssociation
+    Properties:
+      AllocationId: !GetAtt VMSeriesManagementEIPAZ1.AllocationId
+      NetworkInterfaceId: !Ref VMSeriesManagementENIAZ1
+
+  VMSeriesPublicENIAZ1:
+    Type: AWS::EC2::NetworkInterface
+    Properties:
+      Description: VM-Series Public
+      GroupSet: [ !ImportValue VMSeriesPublicSecurityGroup ]
+      SubnetId: !ImportValue NATGWSubnetAZ1
+      Tags:
+        - Key: Name
+          Value: !Sub "${SecurityNamePrefix} VM-Series Public"
+
+  VMSeriesPublicEIPAZ1:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: Name
+          Value: !Sub "${SecurityNamePrefix} VM-Series Public"
+
+  VMSeriesPublicEIPAssociationAZ1:
+    Type: AWS::EC2::EIPAssociation
+    Properties:
+      AllocationId: !GetAtt VMSeriesPublicEIPAZ1.AllocationId
+      NetworkInterfaceId: !Ref VMSeriesPublicENIAZ1
+
+  VMSeriesDataENIAZ1:
+    Type: AWS::EC2::NetworkInterface
+    Properties:
+      Description: VM-Series GWLB Data - AZ1
+      SourceDestCheck: false
+      GroupSet: [ !ImportValue VMSeriesDataSecurityGroup ]
+      SubnetId: !ImportValue VMSeriesDataSubnetAZ1
+      Tags:
+        - Key: Name
+          Value: !Sub "${SecurityNamePrefix} VM-Series Data"
+  VMSeriesInstanceAZ1:
+    Type: AWS::EC2::Instance
+    DependsOn: LambdaS3CustomResource
+    UpdateReplacePolicy: Delete
+    Properties:
+      DisableApiTermination: false
+      InstanceInitiatedShutdownBehavior: stop
+      EbsOptimized: true
+      ImageId: !GetAtt VMSeriesAmiLookup.ImageId
+      InstanceType: !Ref VMSeriesInstanceType
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeType: gp2
+            DeleteOnTermination: true
+            VolumeSize: 60
+            Encrypted: true
+      Monitoring: false
+      # Note: IMDSv2 (HttpTokens: required) is NOT enforced here because
+      # PAN-OS PAYG licensing uses IMDSv1 to retrieve instance identity
+      # for marketplace registration. Enforcing IMDSv2 breaks device registration.
+      Tags:
+        - Key: Name
+          Value: !Sub "${SecurityNamePrefix} VM-Series"
+      NetworkInterfaces:
+        - NetworkInterfaceId: !Ref VMSeriesManagementENIAZ1
+          DeviceIndex: '1'
+        - NetworkInterfaceId: !Ref VMSeriesDataENIAZ1
+          DeviceIndex: '0'
+        - NetworkInterfaceId: !Ref VMSeriesPublicENIAZ1
+          DeviceIndex: '2'
+      IamInstanceProfile: !Ref BootstrapInstanceProfile
+      UserData:
+        Fn::Base64: 
+          Fn::Join:
+            - ';'
+            - - "mgmt-interface-swap=enable"
+              - !Sub "vmseries-bootstrap-aws-s3bucket=${SampleS3Bucket}"
+
+# ======================================================================================================================
+#   Outputs
+# ======================================================================================================================
+
+Outputs:
+
+  VMSeriesManagementEIP:
+    Description: Management EIP of VM-Series Firewall
+    Value: !Ref VMSeriesManagementEIPAZ1
+    Export:
+      Name: VMSeriesManagementEIP
+
+  VMSeriesPublicEIP:
+    Description: Public EIP of VM-Series Firewall
+    Value: !Ref VMSeriesPublicEIPAZ1
+    Export:
+      Name: VMSeriesPublicEIP
+
+  VMSeriesInstanceId:
+    Description: Instance ID of VM-Series Firewall
+    Value: !Ref VMSeriesInstanceAZ1
+    Export:
+      Name: VMSeriesInstanceId
+
+  VMSeriesAmiId:
+    Description: Marketplace AMI resolved and used for the VM-Series Firewall
+    Value: !GetAtt VMSeriesAmiLookup.ImageId
+
+  VMSeriesAmiName:
+    Description: Name of the Marketplace AMI resolved for the VM-Series Firewall
+    Value: !GetAtt VMSeriesAmiLookup.ImageName
