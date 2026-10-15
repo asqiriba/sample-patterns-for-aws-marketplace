@@ -1,0 +1,52 @@
+{
+  "deployment": {
+    "service_name": "payments-service",
+    "environment": "production",
+    "status": "deployed; card authorizations timing out intermittently",
+    "deployment_id": "d-5102",
+    "deployed_at": "2026-10-20T09:05:00Z",
+    "current_version": "v5.3.0",
+    "previous_version": "v5.2.4",
+    "change": "Added a synchronous fraud-score call to the authorization path with a 3 s client timeout.",
+    "failure": "Fraud-score latency spikes push card authorizations past the 2.5 s gateway deadline.",
+    "failed_component": "payments-service v5.3.0 fraud-score client",
+    "traffic": "100% of payments traffic is on v5.3.0."
+  },
+  "dependencies": [
+    {"service": "payments-service", "depends_on": "fraud-score"},
+    {"service": "payments-service", "depends_on": "ledger-db"},
+    {"service": "checkout-service", "depends_on": "payments-service"},
+    {"service": "refunds-worker", "depends_on": "payments-service"}
+  ],
+  "rollback": {
+    "application_only_rollback_safe": false,
+    "reason": "v5.3.0 added the fraud_decision column and writes it on every authorization; v5.2.4 ignores it, but settlement reports now read it.",
+    "backup": "Point-in-time recovery is enabled on ledger-db; no restore test has been completed this quarter.",
+    "reverse_migration": "Not implemented.",
+    "recovery_options": [
+      "Disable the fraud-score call with its runtime switch, keeping v5.3.0 and the new column.",
+      "If a rollback is chosen, confirm settlement reports tolerate missing fraud_decision values first."
+    ],
+    "approval_owner": "Payments release owner",
+    "execution_authorized": false
+  },
+  "history": [
+    {"deployment_id": "d-5102", "at": "2026-10-20T09:05:00Z", "version": "v5.3.0", "status": "succeeded", "change": "Synchronous fraud-score call on authorization; fraud_decision column."},
+    {"deployment_id": "d-5097", "at": "2026-10-18T11:30:00Z", "version": "v5.2.4", "status": "succeeded", "change": "Retry budget for ledger writes."}
+  ],
+  "metrics": {
+    "window": "2026-10-20T08:45:00Z/2026-10-20T10:00:00Z",
+    "series": [
+      {"name": "authorization_timeout_rate", "unit": "percent", "before_deploy": 0.1, "after_deploy": 6.4},
+      {"name": "latency_p95", "unit": "ms", "before_deploy": 820, "after_deploy": 2710},
+      {"name": "fraud_score_latency_p95", "unit": "ms", "before_deploy": null, "after_deploy": 2380}
+    ],
+    "summary": "Authorization timeouts rose from 0.1% to 6.4% after d-5102, tracking fraud-score latency."
+  },
+  "logs": [
+    "2026-10-20T09:12:44Z ERROR payments-service op=authorize msg=\"gateway deadline exceeded after 2500ms (fraud-score 2380ms)\"",
+    "2026-10-20T09:12:45Z WARN  payments-service op=authorize msg=\"fraud-score slow response, continuing\"",
+    "2026-10-20T09:14:02Z ERROR payments-service op=authorize msg=\"gateway deadline exceeded after 2500ms (fraud-score 2440ms)\""
+  ],
+  "runbook_refs": ["runbook-payments-timeouts", "runbook-feature-switches"]
+}

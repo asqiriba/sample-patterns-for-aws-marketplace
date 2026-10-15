@@ -1,0 +1,36 @@
+{
+  "added": [
+    "Builtin.Helpfulness"
+  ],
+  "baselineKey": "baselines/2026-10-09T00:53:47Z/f34c577/3/baseline.json",
+  "baselineWritten": true,
+  "categoryDeltas": {
+    "adversarial": {
+      "delta": 0.00660000000000005,
+      "new": 0.9266000000000001,
+      "old": 0.92
+    },
+    "edge_cases": {
+      "delta": 0.025600000000000067,
+      "new": 0.7336,
+      "old": 0.708
+    },
+    "happy_path": {
+      "delta": 0.02293333333333325,
+      "new": 0.8149333333333333,
+      "old": 0.792
+    },
+    "regressions": {
+      "delta": 0.0181904761904762,
+      "new": 0.841047619047619,
+      "old": 0.8228571428571428
+    }
+  },
+  "from": "2",
+  "manifestVersion": "2026-10-09T00:53:47Z/f34c577",
+  "note": "noise.json comes only from `module11 calibrate`",
+  "removed": [],
+  "repeats": 5,
+  "runId": "c91f9ab72b64",
+  "to": "3"
+}

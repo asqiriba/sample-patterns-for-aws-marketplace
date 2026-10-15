@@ -1,0 +1,16 @@
+{
+  "patches": [
+    {
+      "file": "app.mjs",
+      "why": "Hide the Logz.io panel: Module 11 has no Logz.io (config.logzioUrl is null).",
+      "anchor": "grid.append(trace);",
+      "replacement": "if (config.logzioUrl) grid.append(trace);"
+    },
+    {
+      "file": "planning.mjs",
+      "why": "Flags are code in Module 11, so the planning panel is read-only.",
+      "anchor": "toggle.hidden = !state?.can_edit;",
+      "replacement": "toggle.hidden = true;"
+    }
+  ]
+}

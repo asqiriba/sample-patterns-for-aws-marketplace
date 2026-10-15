@@ -8,9 +8,10 @@ import ssl
 import subprocess
 import tempfile
 import time
-import urllib.request
 
 import boto3
+
+from module10.urls import ECS_METADATA_HOST, open_url
 
 
 def task_address(ecs, ec2, metadata):
@@ -23,7 +24,8 @@ def task_address(ecs, ec2, metadata):
 
 
 def main():
-    with urllib.request.urlopen(os.environ["ECS_CONTAINER_METADATA_URI_V4"] + "/task", timeout=5) as response:
+    with open_url(os.environ["ECS_CONTAINER_METADATA_URI_V4"] + "/task", timeout=5,
+                  http_hosts={ECS_METADATA_HOST}) as response:
         metadata = json.load(response)
     task_arn, address = task_address(boto3.client("ecs"), boto3.client("ec2"), metadata)
     with tempfile.TemporaryDirectory(prefix="portkey-tls-") as directory:
@@ -52,7 +54,7 @@ def main():
                 if stopping or process.poll() is not None:
                     raise RuntimeError("Portkey stopped during startup")
                 try:
-                    with urllib.request.urlopen("https://127.0.0.1:8443/ping", context=context, timeout=1):
+                    with open_url("https://127.0.0.1:8443/ping", context=context, timeout=1):
                         break
                 except OSError:
                     time.sleep(0.5)

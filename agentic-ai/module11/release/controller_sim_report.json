@@ -1,0 +1,642 @@
+{
+ "closureSha256": "sha256:6a6d99d2acce0cbe4839ef11e84a2b0fea1654259240f231757a121ffb71bb3e",
+ "cut": null,
+ "generatedBy": "python -m module11 sim verify",
+ "inputs": {
+  "sessionDurationsSha256": "sha256:a24da3d79150be0afdfeb13f42024a82140e2ead1373510aa55d12d9b0428261"
+ },
+ "passed": true,
+ "rows": [
+  {
+   "base": 0.02,
+   "case": "demo-power-nominal",
+   "effect": {
+    "payments_search_runbooks": 0.231
+   },
+   "medianRolledBackSeconds": 177.2,
+   "pPromoted": 0.0004,
+   "pRolledBack": 0.9906,
+   "passed": true,
+   "profile": "demo",
+   "promoted": 4,
+   "rate": null,
+   "rolledBack": 9906,
+   "rolledBackBy430": 0.9906,
+   "rolledBackBy500": 0.9906,
+   "runs": 10000,
+   "stalled": 0,
+   "threshold": {
+    "maxPromoted": 0.001,
+    "minRolledBackBy430": 0.9,
+    "minRolledBackBy500": 0.99
+   }
+  },
+  {
+   "base": 0.02,
+   "case": "demo-null-s7",
+   "effect": null,
+   "medianRolledBackSeconds": 213.2,
+   "pPromoted": 0.6335,
+   "pRolledBack": 0.0089,
+   "passed": true,
+   "profile": "demo",
+   "promoted": 6335,
+   "rate": null,
+   "rolledBack": 89,
+   "rolledBackBy430": 0.0089,
+   "rolledBackBy500": 0.0089,
+   "runs": 10000,
+   "stalled": 0,
+   "threshold": {
+    "maxRolledBack": 0.05
+   }
+  },
+  {
+   "base": 0.02,
+   "case": "demo-null-rate20",
+   "effect": null,
+   "medianRolledBackSeconds": 314.0,
+   "pPromoted": 0.9916,
+   "pRolledBack": 0.0084,
+   "passed": true,
+   "profile": "demo",
+   "promoted": 4958,
+   "rate": 20,
+   "rolledBack": 42,
+   "rolledBackBy430": 0.0022,
+   "rolledBackBy500": 0.0036,
+   "runs": 5000,
+   "stalled": 0,
+   "threshold": {
+    "maxRolledBack": 0.05
+   }
+  },
+  {
+   "base": 0.002,
+   "case": "prod-null-30-0.002",
+   "cpUpper": 0.002915,
+   "effect": null,
+   "maxLooks": 135,
+   "medianMinutes": 179.5,
+   "passed": true,
+   "power": 0.00125,
+   "profile": "prod",
+   "promoted": 3995,
+   "rate": 30,
+   "reasons": {
+    "error_rate": 1,
+    "quality": 3,
+    "tool_failure": 1
+   },
+   "rolledBack": 5,
+   "runs": 4000,
+   "stalled": 0,
+   "threshold": {
+    "maxCpUpper": 0.01,
+    "maxStalled": 0
+   }
+  },
+  {
+   "base": 0.002,
+   "case": "prod-null-120-0.002",
+   "cpUpper": 0.001392,
+   "effect": null,
+   "maxLooks": 127,
+   "medianMinutes": 102.8,
+   "passed": true,
+   "power": 0.00025,
+   "profile": "prod",
+   "promoted": 3999,
+   "rate": 120,
+   "reasons": {
+    "error_rate": 1
+   },
+   "rolledBack": 1,
+   "runs": 4000,
+   "stalled": 0,
+   "threshold": {
+    "maxCpUpper": 0.01,
+    "maxStalled": 0
+   }
+  },
+  {
+   "base": 0.005,
+   "case": "prod-null-30-0.005",
+   "cpUpper": 0.00219,
+   "effect": null,
+   "maxLooks": 148,
+   "medianMinutes": 179.4,
+   "passed": true,
+   "power": 0.00075,
+   "profile": "prod",
+   "promoted": 3997,
+   "rate": 30,
+   "reasons": {
+    "tool_failure": 3
+   },
+   "rolledBack": 3,
+   "runs": 4000,
+   "stalled": 0,
+   "threshold": {
+    "maxCpUpper": 0.01,
+    "maxStalled": 0
+   }
+  },
+  {
+   "base": 0.005,
+   "case": "prod-null-120-0.005",
+   "cpUpper": 0.000922,
+   "effect": null,
+   "maxLooks": 139,
+   "medianMinutes": 102.8,
+   "passed": true,
+   "power": 0.0,
+   "profile": "prod",
+   "promoted": 4000,
+   "rate": 120,
+   "reasons": {},
+   "rolledBack": 0,
+   "runs": 4000,
+   "stalled": 0,
+   "threshold": {
+    "maxCpUpper": 0.01,
+    "maxStalled": 0
+   }
+  },
+  {
+   "base": 0.02,
+   "case": "prod-null-30-0.02",
+   "cpUpper": 0.00219,
+   "effect": null,
+   "maxLooks": 147,
+   "medianMinutes": 179.1,
+   "passed": true,
+   "power": 0.00075,
+   "profile": "prod",
+   "promoted": 3997,
+   "rate": 30,
+   "reasons": {
+    "error_rate": 1,
+    "quality": 1,
+    "tool_failure": 1
+   },
+   "rolledBack": 3,
+   "runs": 4000,
+   "stalled": 0,
+   "threshold": {
+    "maxCpUpper": 0.01,
+    "maxStalled": 0
+   }
+  },
+  {
+   "base": 0.02,
+   "case": "prod-null-120-0.02",
+   "cpUpper": 0.002915,
+   "effect": null,
+   "maxLooks": 130,
+   "medianMinutes": 102.8,
+   "passed": true,
+   "power": 0.00125,
+   "profile": "prod",
+   "promoted": 3995,
+   "rate": 120,
+   "reasons": {
+    "error_rate": 1,
+    "tool_failure": 4
+   },
+   "rolledBack": 5,
+   "runs": 4000,
+   "stalled": 0,
+   "threshold": {
+    "maxCpUpper": 0.01,
+    "maxStalled": 0
+   }
+  },
+  {
+   "base": 0.05,
+   "case": "prod-null-30-0.05",
+   "cpUpper": 0.00219,
+   "effect": null,
+   "maxLooks": 155,
+   "medianMinutes": 179.2,
+   "passed": true,
+   "power": 0.00075,
+   "profile": "prod",
+   "promoted": 3997,
+   "rate": 30,
+   "reasons": {
+    "quality": 1,
+    "tool_failure": 2
+   },
+   "rolledBack": 3,
+   "runs": 4000,
+   "stalled": 0,
+   "threshold": {
+    "maxCpUpper": 0.01,
+    "maxStalled": 0
+   }
+  },
+  {
+   "base": 0.05,
+   "case": "prod-null-120-0.05",
+   "cpUpper": 0.002558,
+   "effect": null,
+   "maxLooks": 123,
+   "medianMinutes": 102.8,
+   "passed": true,
+   "power": 0.001,
+   "profile": "prod",
+   "promoted": 3996,
+   "rate": 120,
+   "reasons": {
+    "tool_failure": 4
+   },
+   "rolledBack": 4,
+   "runs": 4000,
+   "stalled": 0,
+   "threshold": {
+    "maxCpUpper": 0.01,
+    "maxStalled": 0
+   }
+  },
+  {
+   "base": 0.002,
+   "case": "model-null-30-0.002",
+   "cpUpper": 0.001805,
+   "effect": null,
+   "maxLooks": 218,
+   "medianMinutes": 239.4,
+   "passed": true,
+   "power": 0.0005,
+   "profile": "model",
+   "promoted": 3998,
+   "rate": 30,
+   "reasons": {
+    "error_rate": 1,
+    "quality": 1
+   },
+   "rolledBack": 2,
+   "runs": 4000,
+   "stalled": 0,
+   "threshold": {
+    "maxCpUpper": 0.01,
+    "maxStalled": 0
+   }
+  },
+  {
+   "base": 0.002,
+   "case": "model-null-120-0.002",
+   "cpUpper": 0.000922,
+   "effect": null,
+   "maxLooks": 206,
+   "medianMinutes": 192.8,
+   "passed": true,
+   "power": 0.0,
+   "profile": "model",
+   "promoted": 4000,
+   "rate": 120,
+   "reasons": {},
+   "rolledBack": 0,
+   "runs": 4000,
+   "stalled": 0,
+   "threshold": {
+    "maxCpUpper": 0.01,
+    "maxStalled": 0
+   }
+  },
+  {
+   "base": 0.005,
+   "case": "model-null-30-0.005",
+   "cpUpper": 0.003602,
+   "effect": null,
+   "maxLooks": 196,
+   "medianMinutes": 239.4,
+   "passed": true,
+   "power": 0.00175,
+   "profile": "model",
+   "promoted": 3993,
+   "rate": 30,
+   "reasons": {
+    "error_rate": 3,
+    "quality": 2,
+    "tool_failure": 2
+   },
+   "rolledBack": 7,
+   "runs": 4000,
+   "stalled": 0,
+   "threshold": {
+    "maxCpUpper": 0.01,
+    "maxStalled": 0
+   }
+  },
+  {
+   "base": 0.005,
+   "case": "model-null-120-0.005",
+   "cpUpper": 0.001805,
+   "effect": null,
+   "maxLooks": 208,
+   "medianMinutes": 192.8,
+   "passed": true,
+   "power": 0.0005,
+   "profile": "model",
+   "promoted": 3998,
+   "rate": 120,
+   "reasons": {
+    "error_rate": 1,
+    "tool_failure": 1
+   },
+   "rolledBack": 2,
+   "runs": 4000,
+   "stalled": 0,
+   "threshold": {
+    "maxCpUpper": 0.01,
+    "maxStalled": 0
+   }
+  },
+  {
+   "base": 0.02,
+   "case": "model-null-30-0.02",
+   "cpUpper": 0.000922,
+   "effect": null,
+   "maxLooks": 210,
+   "medianMinutes": 239.4,
+   "passed": true,
+   "power": 0.0,
+   "profile": "model",
+   "promoted": 4000,
+   "rate": 30,
+   "reasons": {},
+   "rolledBack": 0,
+   "runs": 4000,
+   "stalled": 0,
+   "threshold": {
+    "maxCpUpper": 0.01,
+    "maxStalled": 0
+   }
+  },
+  {
+   "base": 0.02,
+   "case": "model-null-120-0.02",
+   "cpUpper": 0.003937,
+   "effect": null,
+   "maxLooks": 203,
+   "medianMinutes": 192.8,
+   "passed": true,
+   "power": 0.002,
+   "profile": "model",
+   "promoted": 3992,
+   "rate": 120,
+   "reasons": {
+    "error_rate": 2,
+    "tool_failure": 6
+   },
+   "rolledBack": 8,
+   "runs": 4000,
+   "stalled": 0,
+   "threshold": {
+    "maxCpUpper": 0.01,
+    "maxStalled": 0
+   }
+  },
+  {
+   "base": 0.05,
+   "case": "model-null-30-0.05",
+   "cpUpper": 0.000922,
+   "effect": null,
+   "maxLooks": 206,
+   "medianMinutes": 239.2,
+   "passed": true,
+   "power": 0.0,
+   "profile": "model",
+   "promoted": 4000,
+   "rate": 30,
+   "reasons": {},
+   "rolledBack": 0,
+   "runs": 4000,
+   "stalled": 0,
+   "threshold": {
+    "maxCpUpper": 0.01,
+    "maxStalled": 0
+   }
+  },
+  {
+   "base": 0.05,
+   "case": "model-null-120-0.05",
+   "cpUpper": 0.002915,
+   "effect": null,
+   "maxLooks": 208,
+   "medianMinutes": 192.8,
+   "passed": true,
+   "power": 0.00125,
+   "profile": "model",
+   "promoted": 3995,
+   "rate": 120,
+   "reasons": {
+    "error_rate": 3,
+    "tool_failure": 2
+   },
+   "rolledBack": 5,
+   "runs": 4000,
+   "stalled": 0,
+   "threshold": {
+    "maxCpUpper": 0.01,
+    "maxStalled": 0
+   }
+  },
+  {
+   "base": 0.02,
+   "case": "prod-null-10-0.02",
+   "cpUpper": 0.00219,
+   "effect": null,
+   "maxLooks": 151,
+   "medianMinutes": 421.4,
+   "passed": true,
+   "power": 0.00075,
+   "profile": "prod",
+   "promoted": 3997,
+   "rate": 10,
+   "reasons": {
+    "error_rate": 2,
+    "tool_failure": 1
+   },
+   "rolledBack": 3,
+   "runs": 4000,
+   "stalled": 0,
+   "threshold": {
+    "maxCpUpper": 0.01,
+    "maxStalled": 0
+   }
+  },
+  {
+   "base": 0.02,
+   "case": "prod-null-600-0.02",
+   "cpUpper": 0.002915,
+   "effect": null,
+   "maxLooks": 103,
+   "medianMinutes": 94.5,
+   "passed": true,
+   "power": 0.00125,
+   "profile": "prod",
+   "promoted": 3995,
+   "rate": 600,
+   "reasons": {
+    "error_rate": 4,
+    "tool_failure": 1
+   },
+   "rolledBack": 5,
+   "runs": 4000,
+   "stalled": 0,
+   "threshold": {
+    "maxCpUpper": 0.01,
+    "maxStalled": 0
+   }
+  },
+  {
+   "base": 0.02,
+   "case": "prod-power-error-30",
+   "cpUpper": 0.957104,
+   "effect": {
+    "error": 0.06
+   },
+   "maxLooks": 83,
+   "medianMinutes": 133.3,
+   "passed": true,
+   "power": 0.935,
+   "profile": "prod",
+   "promoted": 26,
+   "rate": 30,
+   "reasons": {
+    "error_rate": 374
+   },
+   "rolledBack": 374,
+   "runs": 400,
+   "stalled": 0,
+   "threshold": {
+    "minPower": 0.8
+   }
+  },
+  {
+   "base": 0.02,
+   "case": "prod-power-error-120",
+   "cpUpper": 1.0,
+   "effect": {
+    "error": 0.06
+   },
+   "maxLooks": 59,
+   "medianMinutes": 42.9,
+   "passed": true,
+   "power": 1.0,
+   "profile": "prod",
+   "promoted": 0,
+   "rate": 120,
+   "reasons": {
+    "error_rate": 400
+   },
+   "rolledBack": 400,
+   "runs": 400,
+   "stalled": 0,
+   "threshold": {
+    "minPower": 0.8
+   }
+  },
+  {
+   "base": 0.02,
+   "case": "prod-power-error-600",
+   "cpUpper": 1.0,
+   "effect": {
+    "error": 0.06
+   },
+   "maxLooks": 34,
+   "medianMinutes": 11.9,
+   "passed": true,
+   "power": 1.0,
+   "profile": "prod",
+   "promoted": 0,
+   "rate": 600,
+   "reasons": {
+    "error_rate": 400
+   },
+   "rolledBack": 400,
+   "runs": 400,
+   "stalled": 0,
+   "threshold": {
+    "minPower": 0.8
+   }
+  },
+  {
+   "base": 0.02,
+   "case": "prod-power-toolfail-30",
+   "cpUpper": 0.974255,
+   "effect": {
+    "tool_failure": 0.06
+   },
+   "maxLooks": 98,
+   "medianMinutes": 133.8,
+   "passed": true,
+   "power": 0.953333,
+   "profile": "prod",
+   "promoted": 14,
+   "rate": 30,
+   "reasons": {
+    "tool_failure": 286
+   },
+   "rolledBack": 286,
+   "runs": 300,
+   "stalled": 0,
+   "threshold": {
+    "minPower": 0.8
+   }
+  },
+  {
+   "base": 0.02,
+   "case": "prod-power-toolfail-120",
+   "cpUpper": 1.0,
+   "effect": {
+    "tool_failure": 0.06
+   },
+   "maxLooks": 53,
+   "medianMinutes": 43.3,
+   "passed": true,
+   "power": 1.0,
+   "profile": "prod",
+   "promoted": 0,
+   "rate": 120,
+   "reasons": {
+    "tool_failure": 300
+   },
+   "rolledBack": 300,
+   "runs": 300,
+   "stalled": 0,
+   "threshold": {
+    "minPower": 0.8
+   }
+  },
+  {
+   "base": 0.02,
+   "case": "prod-power-quality-120",
+   "cpUpper": 1.0,
+   "effect": {
+    "quality": -0.1
+   },
+   "maxLooks": 64,
+   "medianMinutes": 61.5,
+   "passed": true,
+   "power": 1.0,
+   "profile": "prod",
+   "promoted": 0,
+   "rate": 120,
+   "reasons": {
+    "latency": 1,
+    "quality": 197,
+    "tool_selection": 2
+   },
+   "rolledBack": 200,
+   "runs": 200,
+   "stalled": 0,
+   "threshold": {
+    "minPower": 0.8
+   }
+  }
+ ],
+ "wallSeconds": 295.4
+}

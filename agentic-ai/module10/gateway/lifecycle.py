@@ -3,12 +3,12 @@ import argparse
 from datetime import datetime, timezone
 import json
 import time
-import urllib.request
 
 import boto3
 
 from module10.deployment.paths import deployment_path
 from module10.portkey_remote import discovery_context
+from module10.urls import open_url
 
 
 class Lifecycle:
@@ -71,7 +71,7 @@ class Lifecycle:
                 if endpoint.get("task_arn") in {t["taskArn"] for t in tasks if t["lastStatus"] == "RUNNING"}:
                     try:
                         url, context = discovery_context(endpoint)
-                        with urllib.request.urlopen(url + "/ping", context=context, timeout=3) as response:
+                        with open_url(url + "/ping", context=context, timeout=3) as response:
                             if json.load(response).get("status") == "ok":
                                 return {"status": "ready", "url": url, "console_url": url + "/public/logs",
                                     "expires_at": expires_at,

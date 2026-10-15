@@ -1,0 +1,55 @@
+{
+  "deployment": {
+    "service_name": "checkout-service",
+    "environment": "production",
+    "status": "deployed; elevated 502 responses since rollout",
+    "deployment_id": "d-4471",
+    "deployed_at": "2026-10-20T14:20:00Z",
+    "current_version": "v2.14.0",
+    "previous_version": "v2.13.2",
+    "change": "Reduced the upstream connection pool from 64 to 8 and enabled HTTP keep-alive reuse.",
+    "failure": "Upstream connections to payments-service are exhausted under normal load; the load balancer returns 502.",
+    "failed_component": "checkout-service v2.14.0 upstream connection pool",
+    "traffic": "100% of checkout traffic is on v2.14.0."
+  },
+  "dependencies": [
+    {"service": "checkout-service", "depends_on": "payments-service"},
+    {"service": "checkout-service", "depends_on": "inventory-service"},
+    {"service": "storefront-web", "depends_on": "checkout-service"},
+    {"service": "order-email", "depends_on": "checkout-service"}
+  ],
+  "rollback": {
+    "application_only_rollback_safe": true,
+    "reason": "v2.14.0 changed configuration only; no schema migration ran, so redeploying v2.13.2 restores the previous pool size.",
+    "backup": "Not applicable: no data change.",
+    "reverse_migration": "Not applicable.",
+    "recovery_options": [
+      "Roll back checkout-service to v2.13.2 after the release owner approves.",
+      "Alternatively, raise the connection pool back to 64 in a reviewed configuration change."
+    ],
+    "approval_owner": "Checkout release owner",
+    "execution_authorized": false
+  },
+  "history": [
+    {"deployment_id": "d-4471", "at": "2026-10-20T14:20:00Z", "version": "v2.14.0", "status": "succeeded", "change": "Connection pool 64 -> 8; keep-alive reuse on."},
+    {"deployment_id": "d-4466", "at": "2026-10-19T10:05:00Z", "version": "v2.13.2", "status": "succeeded", "change": "Copy change on the order summary page."},
+    {"deployment_id": "d-4459", "at": "2026-10-17T16:40:00Z", "version": "v2.13.1", "status": "succeeded", "change": "Dependency patch for the HTTP client."}
+  ],
+  "metrics": {
+    "window": "2026-10-20T13:50:00Z/2026-10-20T15:00:00Z",
+    "series": [
+      {"name": "http_5xx_rate", "unit": "percent", "before_deploy": 0.2, "after_deploy": 17.8},
+      {"name": "latency_p95", "unit": "ms", "before_deploy": 310, "after_deploy": 2950},
+      {"name": "requests_per_minute", "unit": "count", "before_deploy": 4200, "after_deploy": 4150},
+      {"name": "upstream_pool_in_use", "unit": "connections", "before_deploy": 21, "after_deploy": 8}
+    ],
+    "summary": "502 rate rose from 0.2% to 17.8% within two minutes of d-4471; request volume is unchanged."
+  },
+  "logs": [
+    "2026-10-20T14:21:07Z ERROR checkout-service upstream=payments-service status=502 msg=\"connection pool exhausted (8/8 in use), request queued 2000ms then dropped\"",
+    "2026-10-20T14:21:09Z WARN  checkout-service upstream=payments-service msg=\"keep-alive connection reused after peer close\"",
+    "2026-10-20T14:22:31Z ERROR checkout-service upstream=payments-service status=502 msg=\"connection pool exhausted (8/8 in use), request queued 2000ms then dropped\"",
+    "2026-10-20T14:23:02Z INFO  checkout-service msg=\"health check ok\""
+  ],
+  "runbook_refs": ["runbook-checkout-502", "runbook-connection-pool"]
+}

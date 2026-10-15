@@ -44,7 +44,7 @@ def classify_intent(
     Classify the intent of a user request and determine routing.
 
     This is a single-shot classification (no agent loop needed).
-    Uses Claude Sonnet 4 with temperature=0.0 for deterministic classification.
+    Uses Claude Sonnet 4.6 with temperature=0.0 for deterministic classification.
 
     Parameters
     ----------

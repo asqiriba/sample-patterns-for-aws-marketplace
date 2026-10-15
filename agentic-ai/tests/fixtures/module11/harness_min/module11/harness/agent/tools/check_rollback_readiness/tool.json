@@ -1,0 +1,10 @@
+{
+  "name": "check_rollback_readiness",
+  "agents": [
+    "planner"
+  ],
+  "kind": "lambda",
+  "mutating": false,
+  "timeoutSeconds": 10,
+  "memoryMb": 256
+}

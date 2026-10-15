@@ -1,0 +1,10 @@
+{
+  "name": "get_service_logs",
+  "agents": [
+    "companion"
+  ],
+  "kind": "lambda",
+  "mutating": false,
+  "timeoutSeconds": 10,
+  "memoryMb": 256
+}

@@ -27,7 +27,7 @@ from dataclasses import dataclass, field
 MIN_TOKENS = 50
 EXPECTED_EMBEDDING_DIM = 1024
 
-VERDICT_PASS = "pass"
+VERDICT_PASS = "pass"  # nosec B105 - a quality-gate verdict label, not a password
 VERDICT_REJECT = "reject"
 VERDICT_SKIP_DUPLICATE = "skip_duplicate"
 

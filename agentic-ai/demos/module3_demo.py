@@ -113,7 +113,8 @@ def section_1_framework_consistency() -> None:
   │    from langchain_aws import ChatBedrock                        │
   │    from langgraph.prebuilt import create_react_agent           │
   │                                                                 │
-  │    model = ChatBedrock(model_id="claude-sonnet-4", ...)        │
+  │    model = ChatBedrock(                                        │
+  │        model_id="us.anthropic.claude-sonnet-4-6", ...)         │
   │    agent = create_react_agent(model, repo_tools)               │
   │                                                                 │
   │    Tools: scan_repository, detect_applications, analyze_deps   │
@@ -125,7 +126,8 @@ def section_1_framework_consistency() -> None:
   │    from langchain_aws import ChatBedrock                        │
   │    from langgraph.prebuilt import create_react_agent           │
   │                                                                 │
-  │    model = ChatBedrock(model_id="claude-sonnet-4", ...)        │
+  │    model = ChatBedrock(                                        │
+  │        model_id="us.anthropic.claude-sonnet-4-6", ...)         │
   │    agent = create_react_agent(model, cdk_tools)                │
   │                                                                 │
   │    Tools: analyze_requirements, generate_cdk_stack, validate   │
@@ -133,7 +135,7 @@ def section_1_framework_consistency() -> None:
 """)
 
     concept(
-        "Same framework (LangChain), same model (Claude Sonnet 4), same pattern (ReAct), "
+        "Same framework (LangChain), same model (Claude Sonnet 4.6), same pattern (ReAct), "
         "but different tools and prompts for different tasks. This is the power of "
         "the agent abstraction."
     )
@@ -151,7 +153,7 @@ def section_2_cdk_generation() -> None:
     
     print("\n  [Module 3 Agent] Analyzing requirements...")
     print("  [Module 3 Agent] Using LangGraph ReAct Agent")
-    print("  [Model] Claude Sonnet 4 via Amazon Bedrock")
+    print("  [Model] Claude Sonnet 4.6 via Amazon Bedrock")
     print("  [Tools] 5 CDK generation tools\n")
     
     # Simulate agent execution by calling tool functions directly
@@ -328,8 +330,8 @@ def section_6_llm_as_judge() -> None:
     
     box(
         "LLM-as-Judge Architecture",
-        """Agent Model: Claude Sonnet 4 (temperature=0.1 for code generation)
-Judge Model: Claude Opus 4 (temperature=0.0 for evaluation)
+        """Agent Model: Claude Sonnet 4.6 (temperature=0.1 for code generation)
+Judge Model: Claude Opus 4.5 (temperature=0.0 for evaluation)
 
 Why different models?
 • Avoids bias (agent can't game its own evaluation)
@@ -354,7 +356,7 @@ class VpcStack(Stack):
     }
     
     print("\n  [LLM Judge] Evaluating CDK code...")
-    print("  [Judge Model] Claude Opus 4")
+    print("  [Judge Model] Claude Opus 4.5")
     print("  [Criteria] 4 evaluation criteria\n")
     
     from module3.evaluators.llm_judge import evaluate_with_llm_judge
@@ -722,10 +724,10 @@ def main() -> None:
     header("DEMO COMPLETE", "green")
     print("""
   Next steps:
-    • Explore the code in module3/, routing-agent/, and evaluation/
+    • Explore the code in module3/, routing_agent/, and evaluation/
     • Run the evaluation pipelines with your own test cases
     • Integrate ISV partner APIs for production use
-    • Wait for Module 4 for multi-agent orchestration
+    • Continue with Module 4 for multi-agent orchestration
 
   Thank you for completing Module 3!
 """)

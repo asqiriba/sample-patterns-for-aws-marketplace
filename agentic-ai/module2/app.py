@@ -1,3 +1,5 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
 """
 module2/app.py
 ==============
@@ -23,10 +25,15 @@ USAGE
   curl -X POST http://localhost:8081/analyze \\
     -H "Content-Type: application/json" \\
     -d '{"repo_path": "/path/to/repo"}'
+
+Binds to 127.0.0.1 by default and has no authentication; local demo use only.
+POST bodies must be application/json (at most 1 MiB), and when bound to
+loopback the Host header must be a loopback name.
 """
 
 from __future__ import annotations
 
+import ipaddress
 import json
 import os
 import sys
@@ -71,20 +78,21 @@ def _handle_analysis(payload: dict) -> dict:
     if not repo_path:
         return {"error": "Missing required field: 'repo_path'"}
 
+    # The agent is a LangGraph ReAct graph: it takes a "messages" list and
+    # returns the conversation, whose last message is the analysis.
+    agent_input = {"messages": [("user", f"Analyze the git repository at: {repo_path}")]}
+
     # Use verbose agent for local testing if requested
     if payload.get("verbose"):
         local_agent = create_agent(verbose=True)
-        result = local_agent.invoke({
-            "input": f"Analyze the git repository at: {repo_path}"
-        })
+        result = local_agent.invoke(agent_input)
     else:
-        result = _agent.invoke({
-            "input": f"Analyze the git repository at: {repo_path}"
-        })
+        result = _agent.invoke(agent_input)
 
+    messages = result.get("messages", [])
     return {
         "repo_path": repo_path,
-        "analysis": result.get("output", ""),
+        "analysis": messages[-1].content if messages else "",
         "mock_mode": os.getenv("AGENT_MOCK_REPO", "false").lower() == "true",
         "framework": "langchain",
     }
@@ -93,6 +101,20 @@ def _handle_analysis(payload: dict) -> dict:
 # ---------------------------------------------------------------------------
 # HTTP Server
 # ---------------------------------------------------------------------------
+
+MAX_BODY_BYTES = 1024 * 1024
+_LOOPBACK_HOST_NAMES = {"127.0.0.1", "localhost", "[::1]"}
+
+
+def _is_loopback(host: str) -> bool:
+    """True when a bind address only accepts connections from this machine."""
+    if host == "localhost":
+        return True
+    try:
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False
+
 
 class Handler(BaseHTTPRequestHandler):
     """HTTP request handler for repository analysis API."""
@@ -103,6 +125,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         """Handle GET requests."""
+        if not self._host_allowed():
+            return
         if self.path == "/ping":
             self._respond(200, {"status": "ok", "service": "module2-repo-analysis"})
         else:
@@ -110,18 +134,64 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         """Handle POST requests."""
+        if not self._host_allowed():
+            return
         if self.path != "/analyze":
             self._respond(404, {"error": "not found"})
             return
 
-        length = int(self.headers.get("Content-Length", 0))
-        try:
-            body = json.loads(self.rfile.read(length))
-        except json.JSONDecodeError:
-            self._respond(400, {"error": "invalid JSON"})
+        body = self._read_json_body()
+        if body is None:
             return
 
-        self._respond(200, _handle_analysis(body))
+        try:
+            result = _handle_analysis(body)
+        except Exception as exc:  # generic 500: never echo exception text
+            print(f"[Module2] {type(exc).__name__}: {exc}", file=sys.stderr)
+            self._respond(500, {"error": "internal server error", "detail": type(exc).__name__})
+            return
+        self._respond(200, result)
+
+    def _host_allowed(self) -> bool:
+        """Refuse non-loopback Host headers when bound to loopback (DNS rebinding)."""
+        if not _is_loopback(str(self.server.server_address[0])):
+            return True
+        host = (self.headers.get("Host") or "").strip().lower()
+        if host.startswith("["):
+            hostname = host.split("]", 1)[0] + "]"
+        else:
+            hostname = host.split(":", 1)[0]
+        if hostname in _LOOPBACK_HOST_NAMES:
+            return True
+        self._respond(403, {"error": "forbidden host"})
+        return False
+
+    def _read_json_body(self) -> dict | None:
+        """Return the JSON object body, or send a 4xx and return None."""
+        raw_length = (self.headers.get("Content-Length") or "").strip()
+        if not (raw_length.isascii() and raw_length.isdigit()):
+            self._respond(400, {"error": "a valid Content-Length header is required"})
+            return None
+        length = int(raw_length)
+        if length > MAX_BODY_BYTES:
+            self._respond(413, {"error": f"request body exceeds {MAX_BODY_BYTES} bytes"})
+            return None
+        # Read the declared body before any further check so the client
+        # always receives the error response instead of a connection reset.
+        raw = self.rfile.read(length)
+        content_type = self.headers.get("Content-Type", "")
+        if content_type.split(";", 1)[0].strip().lower() != "application/json":
+            self._respond(415, {"error": "Content-Type must be application/json"})
+            return None
+        try:
+            body = json.loads(raw)
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            self._respond(400, {"error": "invalid JSON"})
+            return None
+        if not isinstance(body, dict):
+            self._respond(400, {"error": "request body must be a JSON object"})
+            return None
+        return body
 
     def _respond(self, code: int, data: dict) -> None:
         """Send JSON response."""
@@ -146,6 +216,8 @@ def run_server(host: str = "127.0.0.1", port: int = 8081) -> None:
         Port to listen on. Default: 8081 (different from Module 1's 8080)
     """
     mock = os.getenv("AGENT_MOCK_REPO", "false").lower() == "true"
+    if not _is_loopback(host):
+        print("  WARNING: no authentication; reachable from your network")
     
     print(f"  🚀  Module 2 Repository Analysis Agent HTTP Server")
     print(f"      http://{host}:{port}/analyze  (POST)")

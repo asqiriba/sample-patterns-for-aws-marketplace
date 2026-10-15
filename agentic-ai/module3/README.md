@@ -16,8 +16,13 @@ Module 3 demonstrates **evaluation and decision engines** using LangChain and La
 
 ## Quick Start
 
+Run from `agentic-ai/` in the core environment (`./INSTALL.sh`, then
+`source .venv/bin/activate`; see the [environment matrix](../README.md#environments)).
+Sections 1-8 of the demo run without AWS credentials in mock mode. Section 9
+(routing) makes a live Amazon Bedrock call, so a full run needs AWS credentials.
+
 ```bash
-# Mock mode (no AWS account needed)
+# Mock mode (no partner API keys needed; Section 9 calls Amazon Bedrock)
 AGENT_MOCK_REPO=true python demos/module3_demo.py
 
 # Generate infrastructure from requirements
@@ -35,7 +40,7 @@ AGENT_MOCK_REPO=true pytest tests/test_module3_tools.py -v
 ### Framework: LangChain + LangGraph
 
 **Model Interface**: `ChatBedrock` (LangChain wrapper for Amazon Bedrock)  
-**Execution Loop**: `AgentExecutor` with ReAct pattern  
+**Execution Loop**: LangGraph `create_react_agent` (ReAct loop)  
 **Tools**: 5 CDK generation and validation tools  
 **Observability**: LangSmith tracing integration  
 
@@ -46,6 +51,13 @@ AGENT_MOCK_REPO=true pytest tests/test_module3_tools.py -v
 3. **`validate_cdk_syntax`** - Validate generated CDK syntax
 4. **`list_available_constructs`** - List available CDK constructs for services
 5. **`generate_cdk_tests`** - Generate test files for CDK stacks
+
+CDK generation is template-based: `generate_cdk_stack` fills Python templates
+in `module3/templates/cdk_patterns.py` from the parameters the agent chooses,
+and no LLM writes the CDK code. The LLM decides which tools to call and with
+which parameters, and it judges the output (LLM-as-judge). `AGENT_MOCK_REPO`
+does not change the generated code. `tests/test_module3_templates.py`
+synthesizes every template offline (the AWS CDK library needs Node.js).
 
 ## Supported Infrastructure Patterns
 
@@ -92,7 +104,7 @@ class RdsStack(Stack):
             self,
             "Database",
             engine=rds.DatabaseInstanceEngine.postgres(
-                version=rds.PostgresEngineVersion.VER_15_4
+                version=rds.PostgresEngineVersion.VER_17
             ),
             vpc=vpc,
             multi_az=True,
@@ -188,7 +200,7 @@ from evaluation.pipelines.module3_eval import run_module3_evaluation
 
 results = run_module3_evaluation(verbose=True)
 
-print(f"Average Score: {results['summary']['average_score']:.1f}/100")
+print(f"Average Score: {results['summary']['average_combined_score']:.1f}/100")
 print(f"Pass Rate: {results['summary']['pass_rate']*100:.1f}%")
 ```
 
@@ -325,7 +337,7 @@ Run `AGENT_MOCK_REPO=true python demos/module3_demo.py --section N`:
 ## Next Steps
 
 - **Module 4**: Multi-agent orchestration (Module 1 + Module 2 + Module 3)
-- **Module 7**: Long-term memory with DynamoDB and vector stores
+- **Module 7**: Agent memory with Redis Cloud, MongoDB Atlas and Neo4j Aura
 - **Module 12**: Production monitoring with CloudWatch and X-Ray
 
 ## License

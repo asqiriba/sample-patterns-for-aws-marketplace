@@ -1,0 +1,65 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+#
+# Seeded to the GitLab project as .gitlab/CODEOWNERS. `seed.py` replaces the
+# literal `@<group>/` with `@$M11_GITLAB_GROUP/`. Check C13 fails the build if a behavior or
+# release-machinery path matches no pattern. A path in two sections needs both approvals.
+# With `seed.py --quality-users` (M11_QUALITY_USERS), the [Quality] line names those users
+# instead of the quality group: GitLab can count an Owner inherited from the parent group for
+# a group section, so the user form keeps the quality reviewer a different person.
+[Behavior][1] @<group>/harness-owners
+/module11/harness/agent/prompts/
+/module11/harness/agent/tools/*/description.md
+/module11/harness/agent/tools/*/tool.json
+/module11/harness/agent/models.yaml
+/module11/harness/agent/orchestration.yaml
+/module11/harness/agent/guardrail.yaml
+/module11/harness/agent/retrieval.yaml
+/module11/harness/agent/external_surfaces.yaml
+/module11/harness/flags/
+/module11/harness/evidence/
+/module11/corpus/runbooks/
+/module11/corpus/updates/
+[Contracts][1] @<group>/harness-owners @<group>/platform
+/module11/harness/agent/tools/*/schema.json
+/module11/harness/agent/tools/*/permissions.json
+[Implementation][1] @<group>/platform
+/module11/harness/agent/tools/*/handler/
+/module11/runtime/
+/module11/edge/
+/module11/deployment/
+/module11/__init__.py
+/module11/requirements-runtime.txt
+/module11/requirements-lambda.txt
+/module10/
+[Quality][1] @<group>/quality
+/module11/harness/evaluation/
+/module11/evaluation/
+/module11/release/
+/module11/lambdas/
+/tests/test_module11_*
+/tests/fixtures/module11/
+[Quality-peer][1] @<group>/harness-owners @<group>/platform
+/module11/harness/evaluation/
+/module11/evaluation/
+/module11/release/
+/module11/lambdas/
+/tests/test_module11_*
+/tests/fixtures/module11/
+[Platform][1] @<group>/platform
+/tests/conftest.py
+/demos/module11_demo.py
+/module11/harness/pipeline/
+/module11/infrastructure/
+/module11/pipeline/
+/module11/gitlab/
+/module11/vercel/
+/module11/aws/
+/module11/corpus/*.py
+/module11/cli.py
+/module11/__main__.py
+/module11/requirements*.txt
+/module11/requirements-pulumi.lock
+/vercel.json
+/.gitlab-ci.yml
+/.gitlab/CODEOWNERS

@@ -1,5 +1,9 @@
 """Image builds must succeed before a deployable digest is reported."""
+import ast
+import hashlib
 import json
+import shutil
+import subprocess
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock
@@ -85,3 +89,49 @@ def test_portkey_build_refreshes_and_patches_base_image():
     infrastructure = (ROOT / "module10/gateway/pulumi/__main__.py").read_text()
     assert dockerfile.count("apt-get upgrade -y") == 2
     assert "docker build --pull --platform linux/arm64" in infrastructure
+
+
+def _lifecycle_calls():
+    program = ast.parse((ROOT / "module10/deployment/pulumi/__main__.py").read_text())
+    return [
+        node for node in ast.walk(program)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "BucketLifecycleConfigurationV2"
+    ]
+
+
+def test_artifact_retention_expires_results_and_manifests():
+    calls = _lifecycle_calls()
+    # One resource with the same logical name keeps this an in-place update on live stacks.
+    assert len(calls) == 1
+    call = calls[0]
+    assert [ast.literal_eval(arg) for arg in call.args] == ["artifacts-retention"]
+    rules = ast.literal_eval(next(kw.value for kw in call.keywords if kw.arg == "rules"))
+    assert len(rules) == 2
+    assert rules[0] == {
+        "id": "demo-results", "status": "Enabled", "filter": {"prefix": "results/"},
+        "expiration": {"days": 7}, "noncurrent_version_expiration": {"noncurrent_days": 7},
+    }
+    assert rules[1] == {
+        "id": "demo-manifests", "status": "Enabled", "filter": {"prefix": "manifests/"},
+        "expiration": {"days": 30}, "noncurrent_version_expiration": {"noncurrent_days": 30},
+    }
+
+
+@pytest.mark.parametrize("name", ["edge.py", "ui.py"])
+def test_hashed_deployment_programs_match_main(name):
+    # edge.py hashes its own source into the API Gateway deployment trigger, and
+    # ui.py hashes the site, so any edit to them redeploys live resources.
+    git = shutil.which("git")
+    if git is None:
+        pytest.skip("git is not available")
+    # nosemgrep: dangerous-subprocess-use-audit - list args, no shell; git show of a fixed path on main
+    shown = subprocess.run(
+        [git, "-C", str(ROOT), "show", f"main:agentic-ai/module10/deployment/pulumi/{name}"],
+        capture_output=True, check=False,
+    )
+    if shown.returncode != 0:
+        pytest.skip("no local main branch to compare against")
+    current = (ROOT / "module10/deployment/pulumi" / name).read_bytes()
+    assert hashlib.sha256(current).hexdigest() == hashlib.sha256(shown.stdout).hexdigest()

@@ -1,0 +1,27 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+#
+# m11-preview-image: build an MR's runtime image from
+# previews/<iid>/<context hash>.zip and push it to m11/devops-companion-preview. MR-controlled build
+# steps run only here: privileged, no cache (P10), no secret, no deployer credential.
+version: 0.2
+env:
+  shell: bash
+phases:
+  pre_build:
+    commands:
+      - echo "$PREVIEW_IID" | grep -Eq '^[0-9]{1,9}$'
+      - echo "$CONTEXT_HASH" | grep -Eq '^[0-9a-f]{64}$'
+      - aws s3 cp "s3://$RELEASE_BUCKET/previews/$PREVIEW_IID/$CONTEXT_HASH.zip" /tmp/context.zip --only-show-errors
+      - mkdir -p /tmp/ctx && cd /tmp/ctx && unzip -q /tmp/context.zip
+      - aws ecr get-login-password | docker login --username AWS --password-stdin "${REPOSITORY_URI%%/*}"
+  build:
+    commands:
+      - |
+        TAG="mr-$PREVIEW_IID-${CONTEXT_HASH:0:16}"
+        if aws ecr describe-images --repository-name "$REPOSITORY_NAME" --image-ids imageTag="$TAG" >/dev/null 2>&1; then
+          echo "image tag $TAG already exists"
+        else
+          cd /tmp/ctx && docker build --platform linux/arm64 -f module11/deployment/Dockerfile -t "$REPOSITORY_URI:$TAG" . \
+            && docker push "$REPOSITORY_URI:$TAG"
+        fi

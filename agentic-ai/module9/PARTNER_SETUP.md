@@ -51,7 +51,7 @@ close to the recording date, not weeks early.
 ## Prerequisites
 
 ```bash
-cd /Users/worsnt/Downloads/Projects/module-9-aws-mp/sample-patterns-for-aws-marketplace/agentic-ai
+cd sample-patterns-for-aws-marketplace/agentic-ai     # your clone of this repository
 python3.12 -m venv .venv
 source .venv/bin/activate
 pip install -r module9/requirements.txt -r module9/requirements-live.txt

@@ -7,7 +7,7 @@ Live workshop demonstration for Module 4: Multi-Agent Architectures.
 Walks through orchestration patterns, communication protocols (Direct HTTP and MCP),
 sequential/parallel execution, and multi-agent synthesis.
 
-The orchestrator agent runs LIVE against Amazon Bedrock (Claude Sonnet 4).
+The orchestrator agent runs LIVE against Amazon Bedrock (Claude Sonnet 4.6).
 Mock mode only affects sub-agent tool data — the LLM reasoning is always real.
 
 USAGE

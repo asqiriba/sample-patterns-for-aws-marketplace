@@ -1,0 +1,14 @@
+[
+  {
+    "actions": [
+      "s3:PutObject"
+    ],
+    "resource": "side_effects"
+  },
+  {
+    "actions": [
+      "bedrock-agentcore:BatchCreateMemoryRecords"
+    ],
+    "resource": "memory"
+  }
+]

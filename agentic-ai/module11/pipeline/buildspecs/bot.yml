@@ -1,0 +1,26 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+#
+# m11-bot (used only if GitLab web-commit signing is unavailable):
+# clone over HTTPS with the bot token through a credential helper (never in .git/config or a URL),
+# apply the change set from s3://<release-bucket>/bot/<CHANGE_ID>.json, commit signed with the bot's
+# SSH signing key (devops-companion/partners/gitlab-bot-signing-key) and push the branch. Both secrets
+# are read into memory by `pipeline bot-commit` and never printed.
+version: 0.2
+env:
+  shell: bash
+phases:
+  build:
+    commands:
+      - echo "$CHANGE_ID" | grep -Eq '^[0-9a-f]{16}$'
+      - |
+        python - <<'PY'
+        import boto3, hashlib, io, json, os, zipfile
+        s3 = boto3.client("s3"); bucket = os.environ["RELEASE_BUCKET"]
+        pointer = json.loads(s3.get_object(Bucket=bucket, Key="tooling/main.json")["Body"].read())
+        data = s3.get_object(Bucket=bucket, Key=pointer["key"])["Body"].read()
+        if hashlib.sha256(data).hexdigest() != pointer["sha256"]:
+            raise SystemExit("tooling archive sha256 mismatch")
+        zipfile.ZipFile(io.BytesIO(data)).extractall("/tmp/tooling")
+        PY
+      - cd /tmp/tooling && python -m module11 pipeline bot-commit --change "$CHANGE_ID"

@@ -1,0 +1,10 @@
+{
+  "name": "get_blast_radius",
+  "agents": [
+    "planner"
+  ],
+  "kind": "lambda",
+  "mutating": false,
+  "timeoutSeconds": 10,
+  "memoryMb": 256
+}

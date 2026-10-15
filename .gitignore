@@ -1,2 +1,9 @@
 # macOS finder metadata, never belongs in the repo
 .DS_Store
+
+# Local virtual environments (created by agentic-ai/INSTALL.sh) and git worktrees
+/.venvs/
+/.worktrees/
+# Screen-capture output and tool caches, wherever a run starts
+/web_demo_captures/
+/.cache/

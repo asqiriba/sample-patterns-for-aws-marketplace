@@ -12,6 +12,7 @@ import boto3
 
 from module10.deployment.paths import deployment_path
 from module10.portkey_remote import RemotePortkeyReviewer, discovery_context
+from module10.urls import open_url
 
 
 def verify(outputs, *, model=False):
@@ -28,7 +29,7 @@ def verify(outputs, *, model=False):
             headers={"Content-Type": "application/json",
                 **({"Authorization": "Bearer " + token} if token else {})})
         try:
-            return urllib.request.urlopen(req, context=context, timeout=10)
+            return open_url(req, context=context, timeout=10)
         except urllib.error.HTTPError as error:
             return error
 
@@ -36,7 +37,7 @@ def verify(outputs, *, model=False):
         assert response.status == 200
         checks["https_health"] = 200
     try:
-        urllib.request.urlopen(url + "/ping", timeout=5)
+        open_url(url + "/ping", timeout=5)
     except urllib.error.URLError as error:
         assert isinstance(error.reason, ssl.SSLCertVerificationError)
         checks["untrusted_certificate_rejected"] = True

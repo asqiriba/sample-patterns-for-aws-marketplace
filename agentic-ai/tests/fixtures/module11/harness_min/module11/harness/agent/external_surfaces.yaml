@@ -1,0 +1,12 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+# Tool surfaces owned outside this harness, pinned by hash. The demo's only
+# Gateway target belongs to this project; the mechanism is the same for another team's target.
+# sha256 is pinned once the staging A/B gateway exists; offline commands hash only this file.
+surfaces:
+  - id: staging-ab-gateway/companion
+    kind: gateway-target
+    stage: staging
+    gateway: m11-staging-ab
+    target: companion
+    sha256: null

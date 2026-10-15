@@ -46,6 +46,7 @@ from module10.control_planes import MockPortkeyGateway
 from module10.models import ReviewResponse
 from module10.runtime import RuntimeBundle, build_runtime
 from module10.server import start_server
+from module10.urls import open_url
 
 try:
     from rich.console import Console
@@ -204,7 +205,7 @@ class DemoContext:
             method="POST",
         )
         try:
-            with urllib.request.urlopen(request, timeout=200) as response:
+            with open_url(request, timeout=200) as response:
                 body = json.loads(response.read().decode("utf-8"))
                 result = ReviewResponse(response.status, body)
         except urllib.error.HTTPError as exc:
@@ -219,7 +220,7 @@ class DemoContext:
         set_recovery_planning_enabled(self.runtime.launch_controller.path, enabled)
         deadline = time.monotonic() + 5
         while time.monotonic() < deadline:
-            with urllib.request.urlopen(f"{self.base_url}/status", timeout=2) as response:
+            with open_url(f"{self.base_url}/status", timeout=2) as response:
                 teams = json.load(response)["teams"]
             if (
                 teams["platform"]["recovery_planning_enabled"] is enabled

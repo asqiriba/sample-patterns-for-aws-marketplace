@@ -150,7 +150,7 @@ def analyze_infrastructure_requirements(requirements: str) -> str:
                 "database": {
                     "type": "RDS PostgreSQL",
                     "engine": "postgres",
-                    "version": "15.4",
+                    "version": "17",
                     "multi_az": True,
                 },
                 "cache": {
@@ -270,16 +270,19 @@ def generate_cdk_stack(
             environment=params.get("environment"),
         )
     elif stack_type == "rds":
-        code = generate_rds_stack(
-            engine=params.get("engine", "POSTGRES"),
-            version=params.get("version", "VER_15_4"),
-            instance_class=params.get("instance_class", "BURSTABLE3"),
-            instance_size=params.get("instance_size", "SMALL"),
-            multi_az=params.get("multi_az", True),
-            allocated_storage=params.get("allocated_storage", 20),
-            backup_retention=params.get("backup_retention", 7),
-            deletion_protection=params.get("deletion_protection", True),
-        )
+        try:
+            code = generate_rds_stack(
+                engine=params.get("engine", "POSTGRES"),
+                version=params.get("version", "VER_17"),
+                instance_class=params.get("instance_class", "BURSTABLE3"),
+                instance_size=params.get("instance_size", "SMALL"),
+                multi_az=params.get("multi_az", True),
+                allocated_storage=params.get("allocated_storage", 20),
+                backup_retention=params.get("backup_retention", 7),
+                deletion_protection=params.get("deletion_protection", True),
+            )
+        except ValueError as exc:
+            return _wrap({"error": str(exc)}, "generate_cdk_stack")
     elif stack_type == "elasticache":
         code = generate_elasticache_stack(
             description=params.get("description", "Redis cache cluster"),
@@ -298,7 +301,7 @@ def generate_cdk_stack(
         )
     elif stack_type == "lambda":
         code = generate_lambda_stack(
-            runtime=params.get("runtime", "PYTHON_3_11"),
+            runtime=params.get("runtime", "PYTHON_3_13"),
             handler=params.get("handler", "index.handler"),
             code_path=params.get("code_path", "lambda"),
             memory_size=params.get("memory_size", 128),

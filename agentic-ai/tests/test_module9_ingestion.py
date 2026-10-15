@@ -140,6 +140,81 @@ class TestDeltaLanding:
         assert incident_row["status"] == "high"
 
 
+class _FakeCursor:
+    def __init__(self, log):
+        self.log, self.description = log, None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def execute(self, statement, params=None):
+        self.log.append((statement, params))
+        self.description = ("version",) if statement.startswith(("DESCRIBE", "SELECT")) else None
+
+    def fetchall(self):
+        return [(3,)]
+
+
+class _FakeConnection:
+    def __init__(self):
+        self.log = []
+
+    def cursor(self):
+        return _FakeCursor(self.log)
+
+
+def _live_lakehouse(settings):
+    """A DatabricksLakehouse over a fake connection (no connector, no network)."""
+    from module9.ingestion.delta_writer import DatabricksLakehouse
+    lakehouse = DatabricksLakehouse.__new__(DatabricksLakehouse)
+    lakehouse._settings, lakehouse._tables_ready, lakehouse._connection = settings, False, _FakeConnection()
+    return lakehouse
+
+
+class TestDatabricksIdentifiers:
+    def test_table_names_must_be_plain_three_part_identifiers(self):
+        from module9.config.settings import databricks_table
+        assert databricks_table("devops.bronze.raw_events") == "devops.bronze.raw_events"
+        for bad in ("devops.bronze", "a.b.c.d", "devops.bronze.raw events", "devops.bronze.x; DROP TABLE y",
+                    "devops.bronze.`x`", "devops.1bronze.x", "devops..x", "devops.bronze.x--", "devops.bronze.x\n"):
+            with pytest.raises(ValueError, match="catalog.schema.table"):
+                databricks_table(bad)
+
+    def test_live_settings_reject_names_that_are_not_identifiers(self):
+        from module9.config.settings import DatabricksSettings
+        live = dict(host="https://dbc.example.cloud.databricks.com", token="t", http_path="/sql/1.0/warehouses/x")  # nosec B106 - dummy token for a settings check; nothing connects
+        DatabricksSettings(**live).validate_for_live()
+        with pytest.raises(ValueError, match="DATABRICKS_BRONZE_TABLE"):
+            DatabricksSettings(**live, bronze_table="raw_events; DROP TABLE x").validate_for_live()
+        with pytest.raises(ValueError, match="DATABRICKS_CATALOG"):
+            DatabricksSettings(**live, catalog="my-catalog").validate_for_live()
+
+    def test_live_writer_binds_values_and_checks_every_table_name(self):
+        from module9.config.settings import DatabricksSettings
+        lakehouse = _live_lakehouse(DatabricksSettings())
+        payload = {"event_type": "deployment", "note": "x'); DROP TABLE devops.bronze.raw_events; --"}
+        assert lakehouse.write_bronze(payload, "abc123") == 3
+        assert lakehouse.write_silver("abc123") == 3
+        log = lakehouse._connection.log
+        inserts = [(s, p) for s, p in log if s.startswith("INSERT")]
+        assert [p for _, p in inserts] == [{"ingest_id": "abc123", "payload": __import__("json").dumps(payload)},
+                                           {"ingest_id": "abc123"}]
+        assert all("DROP" not in s for s, _ in log)          # the payload travels as a bound parameter only
+        assert inserts[0][0].startswith("INSERT INTO devops.bronze.raw_events ")
+        assert "FROM devops.bronze.raw_events WHERE ingest_id = :ingest_id" in inserts[1][0]
+        with pytest.raises(ValueError, match="catalog.schema.table"):
+            lakehouse.read_table("devops.bronze.raw_events; DROP TABLE x")
+        with pytest.raises(ValueError, match="catalog.schema.table"):
+            lakehouse.table_version("devops.bronze.raw_events LIMIT 1; --")
+        with pytest.raises(ValueError, match="last_n"):
+            lakehouse.read_table("devops.bronze.raw_events", last_n=-1)
+        lakehouse.read_table("devops.silver.deployment_events", last_n="2")
+        assert log[-1] == ("SELECT * FROM devops.silver.deployment_events LIMIT 2", None)
+
+
 class TestChunking:
     def test_history_corpus_is_one_fixed_chunk_per_record(self):
         from module9.ingestion.chunk import chunk_record

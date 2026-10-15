@@ -32,8 +32,11 @@ def create_workflow_orchestrator(verbose: bool = True) -> DevOpsCompanionWorkflo
     Returns
     -------
     DevOpsCompanionWorkflow
-        Configured workflow orchestrator backed by Temporal
-        (mock or live depending on TEMPORAL_API_KEY).
+        Configured workflow orchestrator. It is always backed by the
+        in-process MockTemporalClient (the Module 6 teaching layer),
+        whatever TEMPORAL_API_KEY is set to. Real Temporal workflows and
+        workers live in the top-level orchestration/ package
+        (orchestration.client and orchestration.worker).
     """
     client = get_mock_temporal_client()
 

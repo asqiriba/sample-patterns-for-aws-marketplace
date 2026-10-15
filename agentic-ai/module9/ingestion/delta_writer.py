@@ -28,6 +28,11 @@ surface from in-memory tables with monotonically increasing Delta versions.
 Setting DATABRICKS_MOCK_LINEAGE=true keeps Delta fully live but serves the
 lineage record locally, for workspaces where the system tables are not
 readable.
+
+Values (ingest ids, payloads, lineage targets) are always bound parameters.
+Table names cannot be, so every one is checked by databricks_table() before
+it is placed in SQL text, and DatabricksSettings.validate_for_live() rejects
+catalog, schema and table settings that are not plain identifiers.
 """
 from __future__ import annotations
 
@@ -38,6 +43,7 @@ from datetime import datetime, timezone
 
 from module9.config.settings import (
     DatabricksSettings,
+    databricks_table,
     is_mock_databricks,
     is_mock_lineage,
 )
@@ -169,14 +175,14 @@ class DatabricksLakehouse:
             return
         s = self._settings
         self._execute(
-            f"CREATE TABLE IF NOT EXISTS {s.bronze_full_name} ("
+            f"CREATE TABLE IF NOT EXISTS {databricks_table(s.bronze_full_name)} ("
             "  ingest_id STRING,"
             "  ingest_time TIMESTAMP,"
             "  payload STRING"
             ") USING DELTA"
         )
         self._execute(
-            f"CREATE TABLE IF NOT EXISTS {s.silver_full_name} ("
+            f"CREATE TABLE IF NOT EXISTS {databricks_table(s.silver_full_name)} ("
             "  ingest_id STRING,"
             "  event_type STRING,"
             "  event_time STRING,"
@@ -190,7 +196,7 @@ class DatabricksLakehouse:
         self._tables_ready = True
 
     def table_version(self, full_name: str) -> int:
-        rows = self._execute(f"DESCRIBE HISTORY {full_name} LIMIT 1")
+        rows = self._execute(f"DESCRIBE HISTORY {databricks_table(full_name)} LIMIT 1")
         # DESCRIBE HISTORY returns newest first; column 0 is the version.
         return int(rows[0][0]) if rows else 0
 
@@ -198,7 +204,7 @@ class DatabricksLakehouse:
         """Land the raw event untouched; returns the new bronze version."""
         self.ensure_tables()
         self._execute(
-            f"INSERT INTO {self._settings.bronze_full_name} "
+            f"INSERT INTO {databricks_table(self._settings.bronze_full_name)} "  # nosec B608 - table name checked by databricks_table(); values are bound parameters
             "(ingest_id, ingest_time, payload) "
             "VALUES (:ingest_id, current_timestamp(), :payload)",
             {"ingest_id": ingest_id, "payload": json.dumps(raw_event)},
@@ -214,7 +220,7 @@ class DatabricksLakehouse:
         self.ensure_tables()
         s = self._settings
         self._execute(
-            f"INSERT INTO {s.silver_full_name} "
+            f"INSERT INTO {databricks_table(s.silver_full_name)} "  # nosec B608 - table names checked by databricks_table(); ingest_id is a bound parameter
             "(ingest_id, event_type, event_time, service, environment, "
             " region, status, attributes) "
             "SELECT"
@@ -232,7 +238,7 @@ class DatabricksLakehouse:
             "  coalesce(get_json_object(payload, '$.status'),"
             "           get_json_object(payload, '$.severity'), ''),"
             "  payload "
-            f"FROM {s.bronze_full_name} "
+            f"FROM {databricks_table(s.bronze_full_name)} "
             "WHERE ingest_id = :ingest_id",
             {"ingest_id": ingest_id},
         )
@@ -284,7 +290,10 @@ class DatabricksLakehouse:
         return records
 
     def read_table(self, full_name: str, last_n: int = 5) -> list[dict]:
-        rows = self._execute(f"SELECT * FROM {full_name} LIMIT {int(last_n)}")
+        limit = int(last_n)
+        if limit < 0:
+            raise ValueError("last_n must be zero or more")
+        rows = self._execute(f"SELECT * FROM {databricks_table(full_name)} LIMIT {limit}")  # nosec B608 - table name checked by databricks_table(); LIMIT is a non-negative int
         return [dict(enumerate(r)) for r in rows]
 
     def truncate_tables(self) -> dict:
@@ -300,7 +309,7 @@ class DatabricksLakehouse:
             self._settings.bronze_full_name,
             self._settings.silver_full_name,
         ):
-            self._execute(f"TRUNCATE TABLE {table}")
+            self._execute(f"TRUNCATE TABLE {databricks_table(table)}")
         return {
             "bronze_version": self.table_version(self._settings.bronze_full_name),
             "silver_version": self.table_version(self._settings.silver_full_name),

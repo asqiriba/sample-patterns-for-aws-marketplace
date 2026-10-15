@@ -7,9 +7,12 @@ PROVIDERS USED IN THIS PROJECT
 --------------------------------
 Both are available with free trials through AWS Marketplace / Bedrock:
 
-  1. ANTHROPIC — Claude Sonnet 4 via Amazon Bedrock
-     Access : Amazon Bedrock → Model Access → Enable Anthropic models
-     Free   : Pay-per-token, no subscription fee; enable in AWS Console
+  1. ANTHROPIC — Claude Sonnet 4.6 via Amazon Bedrock
+     Access : Serverless Bedrock models are enabled automatically on first
+              invoke. Anthropic models need a one-time use-case submission
+              per account. See
+              https://docs.aws.amazon.com/bedrock/latest/userguide/model-access.html
+     Free   : Pay-per-token, no subscription fee
      Model  : us.anthropic.claude-sonnet-4-6 (cross-region)
      Why    : Primary reasoning engine — best instruction-following,
               tool use, and multi-step reasoning for infra tasks.
@@ -43,10 +46,11 @@ from strands.models import BedrockModel
 
 
 # ---------------------------------------------------------------------------
-# Anthropic — Claude Sonnet 4 via Amazon Bedrock
+# Anthropic — Claude Sonnet 4.6 via Amazon Bedrock
 # ---------------------------------------------------------------------------
 
-# Cross-region inference profile (recommended — auto-routes for availability)
+# Claude Sonnet 4.6 cross-region inference profile (recommended — auto-routes
+# for availability). The constant name is kept for import compatibility.
 CLAUDE_SONNET_4_CRI = "us.anthropic.claude-sonnet-4-6"
 
 # Single-region model ID. Note that on-demand invocation requires an
@@ -62,13 +66,15 @@ def get_bedrock_model(
     max_tokens: int = 4096,
 ) -> BedrockModel:
     """
-    Return a Strands BedrockModel configured for Claude Sonnet 4.
+    Return a Strands BedrockModel configured for Claude Sonnet 4.6.
 
     Prerequisites
     -------------
     1. AWS credentials configured (aws configure or AWS_* env vars)
-    2. Bedrock model access enabled for Anthropic in your region:
-       AWS Console → Amazon Bedrock → Model Access → Request Access
+    2. Bedrock model access: serverless models are enabled automatically on
+       first invoke. Anthropic models need a one-time use-case submission
+       per account. See
+       https://docs.aws.amazon.com/bedrock/latest/userguide/model-access.html
 
     Parameters
     ----------
@@ -154,12 +160,12 @@ def get_hf_bedrock_model(
 
 PROVIDER_INFO = {
     "anthropic": {
-        "name": "Claude Sonnet 4",
+        "name": "Claude Sonnet 4.6",
         "vendor": "Anthropic",
-        "access": "Amazon Bedrock (enable model access in Console)",
+        "access": "Amazon Bedrock (auto-enabled on first invoke; Anthropic: one-time use-case form)",
         "model_id": CLAUDE_SONNET_4_CRI,
-        "free_trial": "No subscription — pay per token after enabling model access",
-        "context_window": "200,000 tokens",
+        "free_trial": "No subscription — pay per token",
+        "context_window": "1,000,000 tokens",
         "strengths": "Best-in-class tool use, instruction following, multi-step reasoning",
     },
     "huggingface": {

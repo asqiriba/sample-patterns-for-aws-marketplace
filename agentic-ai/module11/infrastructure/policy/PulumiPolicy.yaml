@@ -1,0 +1,11 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+# Open-source CrossGuard pack P1-P11, mandatory, run with
+# `pulumi preview|up --policy-pack module11/infrastructure/policy` on m11-harness and m11-platform.
+# The decisions live in rules.py (pure, unit-tested); __main__.py only adapts resource properties.
+runtime:
+  name: python
+  options:
+    toolchain: pip
+    virtualenv: venv
+description: Module 11 release-system guardrails for IAM, tags, logs, Lambda and AgentCore resources

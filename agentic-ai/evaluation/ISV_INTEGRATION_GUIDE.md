@@ -34,9 +34,9 @@ pip install -r requirements.txt
 ```
 
 This will install:
-- `patronus>=0.1.0`
-- `deepchecks>=0.18.0`
-- `comet-ml>=3.35.0`
+- `patronus>=0.1.26,<0.2`
+- `deepchecks>=0.19.1,<0.20`
+- `comet-ml>=3.58,<4`
 
 ### 2. Configure API Keys
 
@@ -51,6 +51,7 @@ export DEEPCHECKS_API_KEY="your-deepchecks-api-key"
 
 # Comet ML
 export COMET_API_KEY="your-comet-api-key"
+export COMET_WORKSPACE="your-comet-workspace"   # optional; used in the dashboard URL
 ```
 
 Or create a `.env` file:
@@ -60,6 +61,7 @@ Or create a `.env` file:
 PATRONUS_API_KEY=your-patronus-api-key
 DEEPCHECKS_API_KEY=your-deepchecks-api-key
 COMET_API_KEY=your-comet-api-key
+COMET_WORKSPACE=your-comet-workspace
 ```
 
 ### 3. Run the Demo

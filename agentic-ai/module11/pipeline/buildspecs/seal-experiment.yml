@@ -1,0 +1,32 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+#
+# m11-seal-experiment: a trusted NO_SOURCE project, started only by
+# m11-operator-experiment with SOURCE_SHA and EXPERIMENT_ID. It validates both (never echoing them),
+# requires the freeze reason `experiment <EXPERIMENT_ID>`, runs main's tooling from the tooling
+# archive (sha256-verified) on the branch archive (exported through the m11-gitlab-notes broker),
+# refuses anything but bundle and model changes (ExperimentScopeRejected), and writes only
+# releases/experiments/<mv>/ and a `kind=experiment` ledger entry. No tag, Release or package.
+version: 0.2
+env:
+  shell: bash
+  variables:
+    PULUMI_SKIP_UPDATE_CHECK: "1"
+phases:
+  build:
+    commands:
+      - |
+        if ! echo "$SOURCE_SHA" | grep -Eq '^[0-9a-f]{40}$' || ! echo "$EXPERIMENT_ID" | grep -Eq '^x-[0-9a-f]{16}$'; then
+          echo 'ExperimentRefused("invalid input")'; exit 1
+        fi
+      - |
+        python - <<'PY'
+        import boto3, hashlib, io, json, os, zipfile
+        s3 = boto3.client("s3"); bucket = os.environ["RELEASE_BUCKET"]
+        pointer = json.loads(s3.get_object(Bucket=bucket, Key="tooling/main.json")["Body"].read())
+        data = s3.get_object(Bucket=bucket, Key=pointer["key"])["Body"].read()
+        if hashlib.sha256(data).hexdigest() != pointer["sha256"]:
+            raise SystemExit("tooling archive sha256 mismatch")
+        zipfile.ZipFile(io.BytesIO(data)).extractall("/tmp/tooling")
+        PY
+      - cd /tmp/tooling && python -m module11 pipeline seal-experiment

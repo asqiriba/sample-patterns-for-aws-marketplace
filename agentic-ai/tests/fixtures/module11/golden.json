@@ -1,0 +1,15 @@
+{
+  "counts": {
+    "artifacts": 55,
+    "behavior": 50,
+    "runtime": 39
+  },
+  "harness_min": {
+    "behavior": "sha256:811d1743015fe9a342b9a42dee310e4b2744ae23b952ce4b7f194d634fc0d326",
+    "runtime": "sha256:53ed24abbc749a272a9d210135a93da0c7eba481fd637cb34360ed0fc7e0da1e",
+    "release": "sha256:c1001e41ef118a4985438a5269059ad3e3513a15de2725a5dafe9a3eda766623",
+    "artifactCount": 55,
+    "behaviorCount": 50,
+    "runtimeCount": 39
+  }
+}

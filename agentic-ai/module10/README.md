@@ -60,6 +60,10 @@ One-time setup:
 .venv/bin/python module10/gateway/setup.py
 ```
 
+The Module 10 tests need this step too; without it, 28 tests error with
+"Install the pinned gateway first". The test commands are in
+[Local checks](deployment/OPERATIONS.md#local-checks).
+
 Run:
 
 ```bash
@@ -107,6 +111,10 @@ To present only the API Gateway opening, add `--section 1`. For the later
 exercises, use `--section 2`, `3`, or `4` with the same session ID.
 Section 1 runs one real investigation plus access, replay, and no-model throttle
 checks. The terminal output explains the gateway controls and expected outcomes.
+The throttle check is best effort: API Gateway throttling depends on token-bucket
+timing, and recorded runs saw anywhere from 0 to 17 of 30 probes throttled. If a
+burst shows no throttle, rerun it or point to the `verify_cloud` evidence; see
+[Request-limit demonstration](deployment/OPERATIONS.md#request-limit-demonstration).
 
 ### Open the UIs
 

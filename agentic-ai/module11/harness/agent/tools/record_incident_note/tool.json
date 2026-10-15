@@ -1,0 +1,15 @@
+{
+  "name": "record_incident_note",
+  "agents": [
+    "companion"
+  ],
+  "kind": "lambda",
+  "mutating": true,
+  "timeoutSeconds": 10,
+  "memoryMb": 256,
+  "shadowResult": {
+    "recorded": false,
+    "shadow": true,
+    "summary": "Shadow session: the incident note was not written."
+  }
+}

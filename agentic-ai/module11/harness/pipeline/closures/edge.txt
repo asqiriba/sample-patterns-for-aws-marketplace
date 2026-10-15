@@ -1,0 +1,14 @@
+# Hand-maintained edge closure: `<repo path>` or `<repo path> as <zip name>`.
+# Check C12 resolves every `from "./x.mjs"` import against the zip names.
+module11/edge/lambda/adapter.mjs
+module11/edge/lambda/router.mjs
+module11/edge/lambda/router_consts.mjs
+# Module 10's Lambda code, packaged unchanged (design 4.5.2, 4.9); its adapter only for validateRequest.
+module10/deployment/lambda/adapter.mjs as m10adapter.mjs
+module10/deployment/lambda/authorizer.mjs
+module10/deployment/lambda/control.mjs
+module10/deployment/lambda/cors.mjs
+module10/deployment/lambda/jwt.mjs
+module10/deployment/lambda/planning.mjs
+module10/deployment/lambda/quota.mjs
+module10/deployment/lambda/resilience.mjs

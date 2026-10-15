@@ -174,7 +174,7 @@ def test_cloud_console_evidence_requires_token_and_replay_makes_no_model_calls(r
     assert records and records[0]["requestOptions"][0]["module10"]["call_id"]
     assert "FAKE_TEST_" not in json.dumps(records)
     with pytest.raises(urllib.error.HTTPError) as denied:
-        urllib.request.urlopen(gateway.base_url + "/__demo/console-evidence", timeout=3)
+        urllib.request.urlopen(gateway.base_url + "/__demo/console-evidence", timeout=3)  # nosec B310 - the test's local loopback gateway
     assert denied.value.code == 403
     calls_before = len(state.requests)
     gateway.console_evidence(records)
@@ -336,7 +336,7 @@ def test_local_console_auth_and_replayed_fallback_evidence(routed):
         assert "googletagmanager.com" not in page.text
         assert browser.get("/public/auth/session").json() == {"authenticated": False}
         assert browser.get("/log/stream").status_code == 401
-        assert browser.post("/public/auth", json={"admin_token": "wrong"}).status_code == 401
+        assert browser.post("/public/auth", json={"admin_token": "wrong"}).status_code == 401  # nosec B105 - a wrong token the test expects to be refused
         login = browser.post("/public/auth", json={"admin_token": token})
         assert login.status_code == 200
         assert "HttpOnly" in login.headers["set-cookie"]

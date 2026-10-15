@@ -64,7 +64,7 @@ class UserAuthorizationContext:
 
 
 def mock_user_authorization_context() -> UserAuthorizationContext:
-    return UserAuthorizationContext(
+    return UserAuthorizationContext(  # nosec B106 - mock context: token_fingerprint is a placeholder label
         issuer="https://tenant.example.auth0.com/",
         subject="auth0|6a4abce083be200f7de2e06f",
         email="aisha.reed@example.com",

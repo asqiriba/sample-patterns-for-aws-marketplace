@@ -1,0 +1,11 @@
+{
+  "name": "delegate_recovery_planning",
+  "agents": [
+    "companion"
+  ],
+  "kind": "delegate",
+  "mutating": false,
+  "timeoutSeconds": 30,
+  "memoryMb": 128,
+  "requiresFlag": "module10-recovery-planning"
+}

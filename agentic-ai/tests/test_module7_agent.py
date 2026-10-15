@@ -3,13 +3,24 @@
 """
 tests/test_module7_agent.py
 ============================
-Integration tests for the memory-augmented agent.
+Tests for the memory-augmented agent.
 All tests run with AGENT_MOCK_MEMORY=true via conftest autouse fixture.
-Note: Tests that invoke the agent make live Bedrock calls.
+
+Offline by default: agent construction and config tests need no AWS access.
+The three tests that invoke the agent make live Bedrock calls and are opt-in:
+
+    RUN_INTEGRATION_TESTS=true AGENT_MOCK_MEMORY=true pytest tests/test_module7_agent.py -v
 """
+import os
+
 import pytest
 
 from module7 import MemoryDomainConfig, create_memory_agent
+
+live_bedrock = pytest.mark.skipif(
+    os.getenv("RUN_INTEGRATION_TESTS", "").lower() != "true",
+    reason="live Bedrock: set RUN_INTEGRATION_TESTS=true and AWS credentials",
+)
 
 
 class TestMemoryAgent:
@@ -43,6 +54,7 @@ class TestMemoryAgent:
         with pytest.raises(ValueError):
             create_memory_agent(base_domain="", verbose=False)
 
+    @live_bedrock
     def test_agent_invocation_returns_messages(self):
         """Agent invocation with session config returns a dict with 'messages' key."""
         agent_graph, session_id = create_memory_agent(verbose=False)
@@ -53,6 +65,7 @@ class TestMemoryAgent:
         assert "messages" in result
         assert len(result["messages"]) > 0
 
+    @live_bedrock
     def test_session_continuity(self):
         """Second turn resolves a vague reference from the first turn."""
         agent_graph, session_id = create_memory_agent(verbose=False)
@@ -75,6 +88,7 @@ class TestMemoryAgent:
         # Agent should reference notification-svc or REDIS_URL from prior context
         assert any(t in final for t in ["notification", "redis", "env", "variable", "memory"])
 
+    @live_bedrock
     def test_full_loop_references_memory_source(self):
         """Full loop test produces a response that references at least one memory source."""
         agent_graph, session_id = create_memory_agent(verbose=False)

@@ -1,4 +1,4 @@
-FROM python:3.13.12-slim-bookworm AS build
+FROM public.ecr.aws/docker/library/python:3.13.12-slim-bookworm AS build
 RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY module10/requirements-review.txt module10/requirements-telemetry.txt module10/deployment/requirements-runtime.txt /tmp/dependencies/
@@ -6,7 +6,7 @@ RUN python -m venv /app/.venv && /app/.venv/bin/pip install --no-cache-dir -r /t
 COPY module10 /app/module10
 RUN /app/.venv/bin/python -m module10.collector install
 
-FROM python:3.13.12-slim-bookworm
+FROM public.ecr.aws/docker/library/python:3.13.12-slim-bookworm
 RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates libstdc++6 && rm -rf /var/lib/apt/lists/* \
     && useradd --uid 10001 --create-home agent
 COPY --from=build --chown=agent:agent /app /app

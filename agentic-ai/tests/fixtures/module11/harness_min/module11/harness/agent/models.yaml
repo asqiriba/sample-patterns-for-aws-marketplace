@@ -1,0 +1,18 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+# Model per agent. Seeded from Module 10's direct-Bedrock default
+# (module10/reviewer.py MODULE10_BEDROCK_MODEL_ID). Direct Bedrock, no Portkey: the model is
+# a manifest field with one source of truth. A change is kind `model` (approval required,
+# 5 repeats, shadow then canary).
+companion:
+  modelId: us.openai.gpt-5.6-luna
+  foundationModelId: openai.gpt-5.6-luna
+  maxOutputTokens: 650
+  reasoningEffort: none
+  promptBudgetTokens: 1500
+planner:
+  modelId: us.openai.gpt-5.6-luna
+  foundationModelId: openai.gpt-5.6-luna
+  maxOutputTokens: 650
+  reasoningEffort: none
+  promptBudgetTokens: 1500

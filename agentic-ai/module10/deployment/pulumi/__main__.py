@@ -39,7 +39,9 @@ aws.s3.BucketVersioningV2("artifacts-versioning", bucket=bucket.id,
     versioning_configuration={"status": "Enabled"})
 aws.s3.BucketLifecycleConfigurationV2("artifacts-retention", bucket=bucket.id,
     rules=[{"id": "demo-results", "status": "Enabled", "filter": {"prefix": "results/"},
-            "expiration": {"days": 7}, "noncurrent_version_expiration": {"noncurrent_days": 7}}])
+            "expiration": {"days": 7}, "noncurrent_version_expiration": {"noncurrent_days": 7}},
+           {"id": "demo-manifests", "status": "Enabled", "filter": {"prefix": "manifests/"},
+            "expiration": {"days": 30}, "noncurrent_version_expiration": {"noncurrent_days": 30}}])
 repository = aws.ecr.Repository("agent-image", image_tag_mutability="IMMUTABLE",
     image_scanning_configuration={"scan_on_push": True}, tags=tags)
 build_logs = aws.cloudwatch.LogGroup("build-logs", retention_in_days=7, tags=tags)

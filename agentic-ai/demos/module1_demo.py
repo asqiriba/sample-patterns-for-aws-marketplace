@@ -257,7 +257,7 @@ def section_5_models() -> None:
 
     from module1.config.models import PROVIDER_INFO, print_provider_info
 
-    print("\n  PROVIDER A — Anthropic Claude Sonnet 4")
+    print("\n  PROVIDER A — Anthropic Claude Sonnet 4.6")
     print_provider_info("anthropic")
 
     print("\n  PROVIDER B — Hugging Face (via Bedrock Marketplace)")
@@ -265,7 +265,7 @@ def section_5_models() -> None:
 
     print("""
   ┌─────────────────────────────────────────────────────────┐
-  │  # Default: Claude Sonnet 4 (Anthropic on Bedrock)      │
+  │  # Default: Claude Sonnet 4.6 (Anthropic on Bedrock)    │
   │  agent = create_agent()                                  │
   │                                                          │
   │  # Switch to Hugging Face — ONE LINE change:            │
@@ -296,7 +296,7 @@ def section_5_models() -> None:
         q = "How many ECS services are running in us-east-1?"
         print("  Running side-by-side comparison...\n")
 
-        print("  [Claude Sonnet 4]")
+        print("  [Claude Sonnet 4.6]")
         a_claude = create_agent(verbose=False)
         t0 = time.time()
         r_claude = a_claude(q)

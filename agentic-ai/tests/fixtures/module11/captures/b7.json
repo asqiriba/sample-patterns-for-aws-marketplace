@@ -1,0 +1,78 @@
+{
+  "canaryStage": "prod",
+  "capture": "b7",
+  "cut": "full",
+  "events": [
+    {
+      "kind": "out",
+      "style": null,
+      "sub": null,
+      "t": 0.12,
+      "text": ""
+    },
+    {
+      "kind": "header",
+      "style": "bold cyan",
+      "sub": null,
+      "t": 0.12,
+      "text": "B7 Wrap   (budget 0:30 at cut level full)"
+    },
+    {
+      "kind": "out",
+      "style": "bold",
+      "sub": "7a",
+      "t": 0.12,
+      "text": "[7a] wrap"
+    },
+    {
+      "kind": "out",
+      "style": "bold",
+      "sub": "7a",
+      "t": 0.12,
+      "text": "A completed DevOps agent:"
+    },
+    {
+      "kind": "out",
+      "style": "bold",
+      "sub": "7a",
+      "t": 0.12,
+      "text": "  every behavior input pinned in one manifest,"
+    },
+    {
+      "kind": "out",
+      "style": "bold",
+      "sub": "7a",
+      "t": 0.12,
+      "text": "  every change through one gated path,"
+    },
+    {
+      "kind": "out",
+      "style": "bold",
+      "sub": "7a",
+      "t": 0.12,
+      "text": "  every session and side effect naming its manifest version,"
+    },
+    {
+      "kind": "out",
+      "style": "bold",
+      "sub": "7a",
+      "t": 0.12,
+      "text": "  and a bad release rolled back with one call."
+    },
+    {
+      "kind": "out",
+      "style": "bold",
+      "sub": "7a",
+      "t": 0.12,
+      "text": "Next: Module 12, securing this pipeline and auditing agent-initiated actions."
+    }
+  ],
+  "recordedAt": "2026-10-09T01:07:12.846753+00:00",
+  "redacted": true,
+  "responses": [],
+  "runIds": [
+    "20261009T010712Z-s7"
+  ],
+  "schema": "m11-capture/1",
+  "section": 7
+}

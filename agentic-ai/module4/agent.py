@@ -9,7 +9,7 @@ specialist agents (Modules 1-3) using two communication protocols:
 - MCP (Model Context Protocol): Tool-based integration for Module 3
 
 FRAMEWORK: LangChain + LangGraph (consistent with Modules 2 and 3)
-MODEL: Claude Sonnet 4 via Amazon Bedrock
+MODEL: Claude Sonnet 4.6 via Amazon Bedrock
 PATTERN: Orchestrator with tool-based delegation
 """
 
@@ -95,7 +95,7 @@ def create_orchestrator(
         a2a_names = [t.name for t in A2A_TOOLS]
         mcp_names = [t.name for t in MCP_TOOLS] if include_mcp else []
         print(f"  [Module 4 Orchestrator] Using LangGraph ReAct Agent")
-        print(f"  [Model] Claude Sonnet 4 via Amazon Bedrock")
+        print(f"  [Model] Claude Sonnet 4.6 via Amazon Bedrock")
         print(f"  [Region] {aws_region}")
         print(f"  [HTTP Tools] {len(a2a_names)}: {', '.join(a2a_names)}")
         print(f"  [MCP Tools] {len(mcp_names)}: {', '.join(mcp_names)}")

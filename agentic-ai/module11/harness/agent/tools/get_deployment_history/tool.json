@@ -1,0 +1,10 @@
+{
+  "name": "get_deployment_history",
+  "agents": [
+    "companion"
+  ],
+  "kind": "lambda",
+  "mutating": false,
+  "timeoutSeconds": 10,
+  "memoryMb": 256
+}

@@ -1,0 +1,12 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+# m11-harness: the DevOps Companion harness of one stage. Stacks dev, staging, prod
+# (main S3 backend) and mr-<iid> (preview backend). Stage settings live in Pulumi.<stack>.yaml
+# (git-ignored; written by `module11 release deploy`); release inputs never do.
+name: m11-harness
+description: Module 11 DevOps Companion harness (runtime, tools, guardrail, memory, edge)
+runtime:
+  name: python
+  options:
+    toolchain: pip
+    virtualenv: venv

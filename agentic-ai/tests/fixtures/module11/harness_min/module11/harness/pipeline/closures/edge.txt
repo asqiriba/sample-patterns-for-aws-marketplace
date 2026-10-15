@@ -1,0 +1,2 @@
+# Hand-maintained edge closure: `<repo path>` or `<repo path> as <zip name>`.
+# Check C12 resolves every `from "./x.mjs"` import against the zip names.

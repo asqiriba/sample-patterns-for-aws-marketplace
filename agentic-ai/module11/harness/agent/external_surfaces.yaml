@@ -1,0 +1,15 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+# Tool surfaces owned outside this harness, pinned by hash. The demo's only
+# Gateway target belongs to this project; the mechanism is the same for another team's target.
+# The hash covers the target's targetConfiguration and metadataConfiguration with ARNs and IDs
+# masked (release/external.py), here the HTTP runtime target on the staging endpoint;
+# `module11 drift check --external` compares it with the live target. Offline commands hash
+# only this file.
+surfaces:
+  - id: staging-ab-gateway/companion
+    kind: gateway-target
+    stage: staging
+    gateway: m11-staging-ab
+    target: companion
+    sha256: "sha256:5f7b9efa2ea20063425092094bffe0a0cfca41a58551ccaf772b7abcb415c3c8"

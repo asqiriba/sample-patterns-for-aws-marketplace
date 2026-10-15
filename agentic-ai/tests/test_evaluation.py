@@ -191,3 +191,49 @@ def test_cometml_anomaly_detection():
     result = tracker.detect_anomalies("score")
     
     assert "anomalies_detected" in result
+
+
+# ---------------------------------------------------------------------------
+# Regression tests for the Module 11 maintenance fixes (mock mode)
+# ---------------------------------------------------------------------------
+
+def test_cometml_workspace_dashboard_url(monkeypatch):
+    """end_experiment() builds a comet.com URL that includes the workspace."""
+    monkeypatch.delenv("COMET_API_KEY", raising=False)
+    monkeypatch.delenv("COMET_WORKSPACE", raising=False)
+    tracker = CometMLTracker(workspace="ws")
+
+    exp_id = tracker.start_experiment("workspace-test")
+    summary = tracker.end_experiment()
+
+    assert tracker.workspace == "ws"
+    assert "comet.com/ws/" in summary["dashboard_url"]
+    assert summary["dashboard_url"].endswith(f"/{tracker.project_name}/{exp_id}")
+
+
+def test_cometml_workspace_from_env(monkeypatch):
+    """COMET_WORKSPACE is the fallback; without it the URL is project-level."""
+    monkeypatch.delenv("COMET_API_KEY", raising=False)
+    monkeypatch.setenv("COMET_WORKSPACE", "env-ws")
+    assert CometMLTracker().workspace == "env-ws"
+
+    monkeypatch.delenv("COMET_WORKSPACE")
+    tracker = CometMLTracker()
+    tracker.start_experiment("no-workspace")
+    summary = tracker.end_experiment()
+    assert summary["dashboard_url"] == f"https://www.comet.com/{tracker.project_name}"
+
+
+def test_deepchecks_quality_suite_with_reference(monkeypatch):
+    """run_quality_suite() accepts context and reference without raising."""
+    monkeypatch.delenv("DEEPCHECKS_API_KEY", raising=False)
+    evaluator = DeepchecksEvaluator()
+
+    result = evaluator.run_quality_suite(
+        "A reasonable answer with enough length to pass the quality checks.",
+        context="c",
+        reference="r",
+    )
+
+    assert isinstance(result["combined_score"], int)
+    assert "hallucination_score" in result["hallucination_check"]

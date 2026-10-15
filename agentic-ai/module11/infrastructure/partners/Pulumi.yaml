@@ -1,0 +1,12 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+# m11-partners (stack `shared`): the GitLab project settings and the Vercel project.
+# Applied from the operator machine only, through `python -m module11 partners up`,
+# which reads the two partner tokens from Secrets Manager into this program's environment only.
+name: m11-partners
+description: Module 11 GitLab project governance and the Vercel preview project
+runtime:
+  name: python
+  options:
+    toolchain: pip
+    virtualenv: venv

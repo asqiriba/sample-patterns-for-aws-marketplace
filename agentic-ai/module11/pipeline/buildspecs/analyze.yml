@@ -1,0 +1,21 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+#
+# m11-analyze, on the prebuilt m11/build-image (lever 4): normalize and hash,
+# detect against prod /current, checks C1-C16 with C16 against c16Base, the offline tests, the
+# image-tag check and context upload, and the tooling archive (tooling/<commit>.zip, main.json).
+# Exports the change plan as CodePipeline variables for the stage conditions.
+version: 0.2
+env:
+  shell: bash
+  variables:
+    M11_SIM_RUNS: "1000"
+    PULUMI_SKIP_UPDATE_CHECK: "1"
+  exported-variables: [IMAGE_REBUILD, IMAGE_CONTEXT, RELEASE_KIND, EVAL_SCOPE, APPROVAL, ROLLOUT, COMMIT]
+phases:
+  build:
+    commands:
+      - cd "$CODEBUILD_SRC_DIR"
+      - for p in harness platform policy partners; do ln -sfn /opt/m11/venv "module11/infrastructure/$p/venv"; done
+      - python -m module11 pipeline analyze --exports /tmp/analyze.env
+      - source /tmp/analyze.env

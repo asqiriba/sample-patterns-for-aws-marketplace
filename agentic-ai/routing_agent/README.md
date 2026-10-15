@@ -19,7 +19,7 @@ The routing agent classifies incoming user requests and routes them to the appro
 
 ```bash
 # Start routing agent server
-python routing-agent/app.py
+python routing_agent/app.py
 
 # Classify a request
 curl -X POST http://localhost:8083/route \
@@ -163,7 +163,7 @@ Health check endpoint.
 
 ### Model Configuration
 
-- **Model**: Claude Sonnet 4 via Amazon Bedrock
+- **Model**: Claude Sonnet 4.6 via Amazon Bedrock
 - **Temperature**: 0.0 (deterministic classification)
 - **Max Tokens**: 1024 (classification is short)
 - **Framework**: LangChain (ChatBedrock + StrOutputParser)
@@ -204,7 +204,7 @@ MODULE3_URL=http://localhost:8082
 
 # Routing agent server
 ROUTING_PORT=8083
-ROUTING_HOST=0.0.0.0
+ROUTING_HOST=127.0.0.1
 ROUTING_VERBOSE=false
 
 # AWS Bedrock
@@ -214,11 +214,11 @@ AWS_REGION=us-east-1
 ## Testing
 
 ```bash
-# Run routing agent tests
+# Run routing agent tests (offline: a fake chat model stands in for Bedrock)
 AGENT_MOCK_REPO=true pytest tests/test_routing_agent.py -v
 
-# Test classification accuracy
-AGENT_MOCK_REPO=true pytest tests/test_routing_agent.py::test_classify_repository_analysis -v
+# Test live classification accuracy against Amazon Bedrock (opt-in)
+RUN_INTEGRATION_TESTS=true pytest tests/test_routing_agent.py -k live -v
 ```
 
 ## Integration Example
@@ -257,7 +257,7 @@ else:
 ## Project Structure
 
 ```
-routing-agent/
+routing_agent/
 ├── agent.py              # Classification and routing logic
 ├── app.py                # HTTP server
 ├── config/

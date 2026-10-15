@@ -48,6 +48,11 @@ AGENT_MOCK_PIPELINE=true AGENT_MOCK_MEMORY=true python demos/module9_demo.py --s
 AGENT_MOCK_PIPELINE=true AGENT_MOCK_MEMORY=true pytest tests/test_module9_*.py -v
 ```
 
+Alternatively, `./INSTALL.sh` from `agentic-ai/` creates the same `.venv` with
+the shared, Module 8 and Module 9 requirements (the core family in the
+[environment matrix](../README.md#environments)); then `source .venv/bin/activate`
+and run the commands above.
+
 ## The demo prepares itself
 
 A full run calls `module9/demo_prep.py` before Section 1, so every run opens
@@ -280,6 +285,6 @@ module9/
     seed_corpora_data.py    tiny per-corpus seed docs
     module7_contract.py     vendored fallback for standalone checkouts
 demos/module9_demo.py       9-section runner (--section, --mock, --no-pause)
-tests/test_module9_*.py     60 tests, all pass offline
+tests/test_module9_*.py     74 tests, all pass offline
 seed_module9_corpora.py     idempotent live seeder
 ```

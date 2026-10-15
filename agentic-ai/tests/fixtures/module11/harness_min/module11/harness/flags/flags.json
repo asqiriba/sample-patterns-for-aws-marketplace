@@ -1,0 +1,30 @@
+{
+  "flags": {
+    "module10-recovery-planning": {
+      "key": "module10-recovery-planning",
+      "version": 1,
+      "on": true,
+      "variations": [
+        false,
+        true
+      ],
+      "offVariation": 0,
+      "fallthrough": {
+        "variation": 0
+      },
+      "targets": [],
+      "contextTargets": [
+        {
+          "contextKind": "team",
+          "values": [
+            "platform",
+            "payments"
+          ],
+          "variation": 1
+        }
+      ],
+      "rules": [],
+      "salt": "module10-recovery-planning"
+    }
+  }
+}

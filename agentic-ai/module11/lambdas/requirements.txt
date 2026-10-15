@@ -1,0 +1,8 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+#
+# m11-ops Lambda layer (python3.13, arm64) for the operations Lambdas (controller, shadow worker).
+# The m11-sdk layer (requirements-lambda.txt) carries boto3 and numpy; the release engines the controller
+# imports also need PyYAML (release/normalize.py). Kept separate so the tool handlers' artifacts and
+# layer do not change.
+PyYAML==6.0.3

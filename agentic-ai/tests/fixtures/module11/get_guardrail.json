@@ -1,0 +1,176 @@
+{
+ "name": "m11-staging-guardrail",
+ "guardrailId": "abcd1234efgh",
+ "guardrailArn": "arn:aws:bedrock:us-east-1:111122223333:guardrail/abcd1234efgh",
+ "version": "3",
+ "status": "READY",
+ "createdAt": "2026-10-06T12:00:00Z",
+ "updatedAt": "2026-10-06T12:00:00Z",
+ "description": "synthetic fixture; get_guardrail_live.json is the redacted live capture",
+ "statusReasons": [],
+ "failureRecommendations": [],
+ "blockedInputMessaging": "This request was blocked by the DevOps Companion guardrail.",
+ "blockedOutputsMessaging": "The DevOps Companion response was blocked by its guardrail.",
+ "contentPolicy": {
+  "filters": [
+   {
+    "type": "VIOLENCE",
+    "inputStrength": "MEDIUM",
+    "outputStrength": "MEDIUM",
+    "inputModalities": [
+     "TEXT"
+    ],
+    "outputModalities": [
+     "TEXT"
+    ],
+    "inputAction": "BLOCK",
+    "outputAction": "BLOCK",
+    "inputEnabled": true,
+    "outputEnabled": true
+   },
+   {
+    "type": "SEXUAL",
+    "inputStrength": "HIGH",
+    "outputStrength": "HIGH",
+    "inputModalities": [
+     "TEXT"
+    ],
+    "outputModalities": [
+     "TEXT"
+    ],
+    "inputAction": "BLOCK",
+    "outputAction": "BLOCK",
+    "inputEnabled": true,
+    "outputEnabled": true
+   },
+   {
+    "type": "PROMPT_ATTACK",
+    "inputStrength": "HIGH",
+    "outputStrength": "NONE",
+    "inputModalities": [
+     "TEXT"
+    ],
+    "outputModalities": [
+     "TEXT"
+    ],
+    "inputAction": "BLOCK",
+    "outputAction": "BLOCK",
+    "inputEnabled": true,
+    "outputEnabled": true
+   },
+   {
+    "type": "MISCONDUCT",
+    "inputStrength": "MEDIUM",
+    "outputStrength": "MEDIUM",
+    "inputModalities": [
+     "TEXT"
+    ],
+    "outputModalities": [
+     "TEXT"
+    ],
+    "inputAction": "BLOCK",
+    "outputAction": "BLOCK",
+    "inputEnabled": true,
+    "outputEnabled": true
+   },
+   {
+    "type": "INSULTS",
+    "inputStrength": "LOW",
+    "outputStrength": "LOW",
+    "inputModalities": [
+     "TEXT"
+    ],
+    "outputModalities": [
+     "TEXT"
+    ],
+    "inputAction": "BLOCK",
+    "outputAction": "BLOCK",
+    "inputEnabled": true,
+    "outputEnabled": true
+   },
+   {
+    "type": "HATE",
+    "inputStrength": "MEDIUM",
+    "outputStrength": "MEDIUM",
+    "inputModalities": [
+     "TEXT"
+    ],
+    "outputModalities": [
+     "TEXT"
+    ],
+    "inputAction": "BLOCK",
+    "outputAction": "BLOCK",
+    "inputEnabled": true,
+    "outputEnabled": true
+   }
+  ],
+  "tier": {
+   "tierName": "CLASSIC"
+  }
+ },
+ "sensitiveInformationPolicy": {
+  "piiEntities": [
+   {
+    "type": "EMAIL",
+    "action": "ANONYMIZE",
+    "inputAction": "ANONYMIZE",
+    "outputAction": "ANONYMIZE",
+    "inputEnabled": true,
+    "outputEnabled": true
+   },
+   {
+    "type": "PHONE",
+    "action": "ANONYMIZE",
+    "inputAction": "ANONYMIZE",
+    "outputAction": "ANONYMIZE",
+    "inputEnabled": true,
+    "outputEnabled": true
+   },
+   {
+    "type": "AWS_ACCESS_KEY",
+    "action": "ANONYMIZE",
+    "inputAction": "ANONYMIZE",
+    "outputAction": "ANONYMIZE",
+    "inputEnabled": true,
+    "outputEnabled": true
+   },
+   {
+    "type": "AWS_SECRET_KEY",
+    "action": "ANONYMIZE",
+    "inputAction": "ANONYMIZE",
+    "outputAction": "ANONYMIZE",
+    "inputEnabled": true,
+    "outputEnabled": true
+   },
+   {
+    "type": "PASSWORD",
+    "action": "ANONYMIZE",
+    "inputAction": "ANONYMIZE",
+    "outputAction": "ANONYMIZE",
+    "inputEnabled": true,
+    "outputEnabled": true
+   }
+  ],
+  "regexes": []
+ },
+ "topicPolicy": {
+  "topics": [
+   {
+    "name": "unapproved-production-changes",
+    "definition": "Requests to execute, approve, or confirm production deployments, rollbacks, restores, or other infrastructure changes on the user's behalf.",
+    "examples": [
+     "Restore the payments database from last night's backup.",
+     "Roll back checkout-service right now."
+    ],
+    "type": "DENY",
+    "inputAction": "BLOCK",
+    "outputAction": "BLOCK",
+    "inputEnabled": true,
+    "outputEnabled": true
+   }
+  ],
+  "tier": {
+   "tierName": "CLASSIC"
+  }
+ }
+}

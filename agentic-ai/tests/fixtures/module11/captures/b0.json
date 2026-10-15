@@ -1,0 +1,64 @@
+{
+  "canaryStage": "prod",
+  "capture": "b0",
+  "cut": "full",
+  "events": [
+    {
+      "kind": "out",
+      "style": null,
+      "sub": null,
+      "t": 0.09,
+      "text": ""
+    },
+    {
+      "kind": "header",
+      "style": "bold cyan",
+      "sub": null,
+      "t": 0.09,
+      "text": "B0 Context   (budget 0:45 at cut level full)"
+    },
+    {
+      "kind": "out",
+      "style": "bold",
+      "sub": "0a",
+      "t": 0.09,
+      "text": "[0a] module11 status --all"
+    },
+    {
+      "kind": "cmd",
+      "style": "bold green",
+      "sub": "0a",
+      "t": 0.09,
+      "text": "$ module11 status --all"
+    },
+    {
+      "kind": "out",
+      "style": null,
+      "sub": "0a",
+      "t": 1.71,
+      "text": "dev      READY     2026-10-08T21:42:43Z/52f62fe  operator-52f62fe  candidate v24, stable v24"
+    },
+    {
+      "kind": "out",
+      "style": null,
+      "sub": "0a",
+      "t": 2.02,
+      "text": "staging  READY     2026-10-09T00:53:47Z/f34c577  harness-v19  staging v11"
+    },
+    {
+      "kind": "out",
+      "style": null,
+      "sub": "0a",
+      "t": 2.4,
+      "text": "prod     READY     2026-10-09T00:07:05Z/71da24b  harness-v18  candidate v10, stable v10"
+    }
+  ],
+  "recordedAt": "2026-10-09T01:07:09.156159+00:00",
+  "redacted": true,
+  "responses": [],
+  "runIds": [
+    "20261009T010706Z-s0"
+  ],
+  "schema": "m11-capture/1",
+  "section": 0
+}
