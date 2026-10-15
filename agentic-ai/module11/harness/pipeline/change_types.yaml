@@ -1,0 +1,60 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+# Change types as data. release/detect.py maps each changed artifact ID to the
+# first matching rule, then merges the matched rules by maximum: rebuild flags, widest
+# evaluation scope, highest approval, most cautious rollout. An unmatched ID maps to `unknown`.
+#
+# Field values:
+#   handlers:       none | tool (the matched tool) | tool_if_limits (only when tool.json's
+#                   timeoutSeconds or memoryMb changed) | all
+#   runtimeVersion: none | maybe | config | image
+#   evalScope:      smoke | tagged (scenarios tagged with the tool) | retrieval | full |
+#                   rebaseline | evalset
+#   approval:       default | required
+#   rollout:        none | full | canary-if-runtime-changed | canary | shadow-then-canary
+revision: 1
+rules:
+  - {name: instructions, match: ["instructions/*"], image: false, handlers: none, bundle: true,
+     runtimeVersion: config, evalScope: full, emphasis: trajectory-hard-gate, approval: default, rollout: canary}
+  - {name: tool_description, match: ["tool/*/description"], image: false, handlers: none, bundle: true,
+     runtimeVersion: config, evalScope: full, emphasis: trajectory-weighted, approval: default, rollout: canary}
+  - {name: tool_meta, match: ["tool/*/meta"], image: false, handlers: tool_if_limits, bundle: true,
+     runtimeVersion: config, evalScope: full, approval: default, rollout: canary}
+  - {name: tool_schema, match: ["tool/*/schema"], image: false, handlers: tool, bundle: true,
+     runtimeVersion: config, evalScope: full, approval: default, rollout: canary}
+  - {name: tool_handler, match: ["tool/*/handler"], image: false, handlers: tool, bundle: false,
+     runtimeVersion: config, evalScope: tagged, approval: default, rollout: canary}
+  - {name: tool_permissions, match: ["tool/*/permissions"], image: false, handlers: none, bundle: false,
+     runtimeVersion: none, evalScope: tagged, approval: default, rollout: full,
+     note: "applies to both arms immediately and is not reverted by rollback; a narrowing takes effect at the next prune"}
+  - {name: orchestration, match: ["orchestration"], image: false, handlers: none, bundle: true,
+     runtimeVersion: config, evalScope: full, emphasis: budgets, approval: default, rollout: canary}
+  - {name: model, match: ["model"], image: false, handlers: none, bundle: true,
+     runtimeVersion: config, evalScope: full, repeats: {default: 5, adversarial: 5}, approval: required,
+     rollout: shadow-then-canary}
+  - {name: guardrail, match: ["guardrail"], image: false, handlers: none, bundle: false,
+     runtimeVersion: config, evalScope: full, repeats: {adversarial: 5}, approval: default, rollout: canary}
+  - {name: retrieval_corpus, match: ["retrieval"], image: false, handlers: none, bundle: false,
+     runtimeVersion: config, evalScope: retrieval, approval: default, rollout: canary}
+  - {name: evidence, match: ["evidence"], image: false, handlers: none, bundle: false,
+     runtimeVersion: config, evalScope: full, approval: default, rollout: canary}
+  - {name: external_surfaces, match: ["external_surfaces"], image: false, handlers: none, bundle: false,
+     runtimeVersion: none, evalScope: full, emphasis: trajectory-weighted, approval: default, rollout: none}
+  - {name: runtime_code, match: ["runtime/code"], image: true, handlers: none, bundle: false,
+     runtimeVersion: image, evalScope: full, approval: default, rollout: canary}
+  - {name: edge_code, match: ["edge/code"], image: false, handlers: none, bundle: false,
+     runtimeVersion: none, evalScope: smoke, approval: default, rollout: full}
+  - {name: flags, match: ["flags"], image: false, handlers: none, bundle: false,
+     runtimeVersion: none, evalScope: full, approval: default, rollout: full}
+  - {name: evaluation_suite, match: ["evaluation/suite", "evaluation/thresholds"], image: false, handlers: none,
+     bundle: false, runtimeVersion: none, evalScope: rebaseline, approval: default, rollout: none,
+     releaseKind: rebaseline}
+  - {name: evaluator_set, match: ["evaluation/evaluators"], image: false, handlers: none, bundle: false,
+     runtimeVersion: none, evalScope: evalset, approval: required, rollout: none, releaseKind: evalset}
+  - {name: pipeline, match: ["pipeline"], image: false, handlers: none, bundle: false,
+     runtimeVersion: none, evalScope: smoke, approval: default, rollout: none}
+  - {name: infrastructure, match: ["infrastructure"], image: false, handlers: none, bundle: false,
+     runtimeVersion: maybe, evalScope: smoke, approval: default, rollout: canary-if-runtime-changed,
+     note: "applies to both arms immediately and is not reverted by rollback"}
+unknown: {name: unknown, image: true, handlers: all, bundle: true, runtimeVersion: image, evalScope: full,
+          approval: required, rollout: canary}

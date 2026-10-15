@@ -1,0 +1,14 @@
+[
+  {
+    "actions": [
+      "s3:GetObject"
+    ],
+    "resource": "evidence"
+  },
+  {
+    "actions": [
+      "bedrock-agentcore:ListMemoryRecords"
+    ],
+    "resource": "memory"
+  }
+]

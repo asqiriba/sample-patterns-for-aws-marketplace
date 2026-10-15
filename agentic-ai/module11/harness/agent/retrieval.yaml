@@ -1,0 +1,12 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+# Retrieval corpus pinned by this harness. snapshotId and snapshotSha256 are
+# written by `module11 corpus snapshot` (Module 9 chunk + quality gates); a change is kind
+# `retrieval_corpus` (retrieval subset, canary).
+corpora:
+  - corpus: policy
+    snapshotId: "pol-3bde882494a9"
+    snapshotSha256: "sha256:5d2392385dbc94e12f6831594fa561ee246972cca1ddb326fa8b839615c6d422"
+    documentCount: 6
+    builtFrom: module9.chunk+quality
+    topK: 3

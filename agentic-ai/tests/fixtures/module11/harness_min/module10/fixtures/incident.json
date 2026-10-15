@@ -1,0 +1,31 @@
+{
+  "deployment": {
+    "service_name": "reporting-service",
+    "environment": "staging",
+    "status": "rollout paused after failed smoke test",
+    "current_version": "v1.9",
+    "previous_version": "v1.8",
+    "schema_migration": "Completed: report metadata schema v2 -> v3; report_owner column renamed to owner_id.",
+    "failure": "An older report reader failed with: column report_owner does not exist.",
+    "failed_component": "report-exporter v1.8, a downstream consumer; the error is not from the reporting-service v1.9 process.",
+    "traffic": "New rollout is paused. Existing staging workloads are still running."
+  },
+  "dependencies": [
+    {"service": "report-exporter", "depends_on": "reporting-service"},
+    {"service": "billing-reader", "depends_on": "reporting-service"},
+    {"service": "analytics-dashboard", "depends_on": "report-exporter"},
+    {"service": "health-monitor", "depends_on": "auth-service"}
+  ],
+  "rollback": {
+    "application_only_rollback_safe": false,
+    "reason": "v1.8 requires schema v2; redeploying it does not reverse the v3 database migration.",
+    "backup": "A pre-migration backup exists, but no restore test has been completed.",
+    "reverse_migration": "Not implemented or tested.",
+    "recovery_options": [
+      "Validate a compatibility fix for older readers against schema v3.",
+      "If a restore is selected, test recovery from the pre-migration backup in isolation and assess data loss first."
+    ],
+    "approval_owner": "Staging release owner",
+    "execution_authorized": false
+  }
+}

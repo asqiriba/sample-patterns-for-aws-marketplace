@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "service_name": {
+      "type": "string",
+      "description": "Service name, for example checkout-service.",
+      "pattern": "^[a-z0-9-]{3,64}$"
+    },
+    "probable_cause": {
+      "type": "string",
+      "description": "One sentence naming the probable cause.",
+      "minLength": 3,
+      "maxLength": 500
+    },
+    "log_line": {
+      "type": "string",
+      "description": "The log line quoted as evidence, verbatim.",
+      "minLength": 1,
+      "maxLength": 1000
+    }
+  },
+  "required": [
+    "service_name",
+    "probable_cause",
+    "log_line"
+  ],
+  "additionalProperties": false
+}

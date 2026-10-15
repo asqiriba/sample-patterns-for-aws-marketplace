@@ -1,0 +1,34 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+#
+# m11-image: build the ARM image from the sealed context
+# builds/<CONTEXT_HASH>.zip and push it as <IMAGE_TAG>. Immutable tags make a rebuild of the same
+# context a no-op. The pipeline's Image stage passes CONTEXT_HASH and IMAGE_TAG from Analyze; the
+# operator paths (`release seal --operator`, `pipeline build-image`) start the same project with
+# the same buildspec, and the build image also overrides DOCKERFILE and the repository.
+version: 0.2
+env:
+  shell: bash
+  exported-variables: [IMAGE_DIGEST]
+phases:
+  pre_build:
+    commands:
+      - test -n "$CONTEXT_HASH" && echo "$CONTEXT_HASH" | grep -Eq '^[0-9a-f]{64}$'
+      - test -n "$IMAGE_TAG" && echo "$IMAGE_TAG" | grep -Eq '^[0-9a-f]{16,64}$'
+      # Default in its own command: an assignment inside a pipeline runs in a subshell and is lost.
+      - export DOCKERFILE="${DOCKERFILE:-module11/deployment/Dockerfile}"
+      - echo "$DOCKERFILE" | grep -Eq '^module11/[A-Za-z0-9/_.-]+/Dockerfile$'
+      - aws s3 cp "s3://$RELEASE_BUCKET/builds/$CONTEXT_HASH.zip" /tmp/context.zip --only-show-errors
+      - mkdir -p /tmp/ctx && cd /tmp/ctx && unzip -q /tmp/context.zip
+      - aws ecr get-login-password | docker login --username AWS --password-stdin "${REPOSITORY_URI%%/*}"
+  build:
+    commands:
+      - |
+        if aws ecr describe-images --repository-name "$REPOSITORY_NAME" --image-ids imageTag="$IMAGE_TAG" >/dev/null 2>&1; then
+          echo "image tag $IMAGE_TAG already exists"
+        else
+          cd /tmp/ctx && docker build --platform linux/arm64 -f "$DOCKERFILE" -t "$REPOSITORY_URI:$IMAGE_TAG" . \
+            && docker push "$REPOSITORY_URI:$IMAGE_TAG"
+        fi
+      - IMAGE_DIGEST="$(aws ecr describe-images --repository-name "$REPOSITORY_NAME" --image-ids imageTag="$IMAGE_TAG" --query 'imageDetails[0].imageDigest' --output text)"
+      - echo "$IMAGE_DIGEST" | grep -Eq '^sha256:[0-9a-f]{64}$'

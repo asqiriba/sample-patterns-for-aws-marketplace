@@ -1,0 +1,20 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+#
+# m11-seal: content-addressed objects, pulumi-inputs.tar, bundle-component.json,
+# the declared manifest and change-plan.json; the image digest resolved by its context tag; the latch
+# check; the bot's annotated tag harness/v<n+1> (`approval: default|required`), its GitLab Release
+# and generic package. A tag that already points at this commit with the same approval line is
+# reused. Source type CODEPIPELINE: only the pipeline starts this project.
+version: 0.2
+env:
+  shell: bash
+  variables:
+    PULUMI_SKIP_UPDATE_CHECK: "1"
+  exported-variables: [RELEASE_TAG, MANIFEST_VERSION, BEHAVIOR_DIGEST]
+phases:
+  build:
+    commands:
+      - cd "$CODEBUILD_SRC_DIR"
+      - python -m module11 pipeline seal --exports /tmp/seal.env
+      - source /tmp/seal.env

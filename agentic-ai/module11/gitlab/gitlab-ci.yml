@@ -1,0 +1,161 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+#
+# Seeded to the GitLab project root as .gitlab-ci.yml. Jobs are thin and run on
+# GitLab.com SaaS runners; every job sets `image:` explicitly.
+# - MR jobs use the prebuilt m11-ci image (no pip at job time) and are treated as untrusted: they
+#   can only start the trusted preview build with three validated variables.
+# - Tag jobs (promote:*) run trusted YAML from the tag commit on the public AWS CLI image pinned
+#   by digest, never an image from the project registry (check C15).
+# Project CI/CD variables set by the m11-partners stack: M11_OIDC_AUD, M11_GITLAB_CI_ROLE_ARN,
+# M11_GITLAB_CI_INFRA_ROLE_ARN, M11_PROMOTER_ROLE_ARN, AWS_REGION.
+
+variables:
+  M11_CI_IMAGE: "58c3477c17db9dd3"
+  M11_SIM_RUNS: "1000"
+
+stages: [build, validate, preview, promote, cleanup]
+
+.mr_job:
+  image: $CI_REGISTRY_IMAGE/m11-ci:$M11_CI_IMAGE
+  needs: [{job: ci-image, optional: true}]
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+.aws_identity:
+  id_tokens:
+    AWS_TOKEN:
+      aud: $M11_OIDC_AUD
+
+ci-image:
+  stage: build
+  image: docker:27.3.1
+  services: [docker:27.3.1-dind]
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never
+    - changes: [module11/gitlab/ci-image/**/*, module11/requirements-ci.txt]
+  script:
+    - echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin "$CI_REGISTRY"
+    - docker build -f module11/gitlab/ci-image/Dockerfile -t "$CI_REGISTRY_IMAGE/m11-ci:$M11_CI_IMAGE" .
+    - docker push "$CI_REGISTRY_IMAGE/m11-ci:$M11_CI_IMAGE"
+
+validate:
+  extends: .mr_job
+  stage: validate
+  timeout: 10m
+  script:
+    - git config --global --add safe.directory "$CI_PROJECT_DIR"   # the runner checks out as another user
+    - git fetch --depth=200 origin "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
+    - python -m module11 ci validate --base "origin/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
+
+preview:deploy:
+  extends: [.mr_job, .aws_identity]
+  stage: preview
+  timeout: 20m
+  script:
+    - python /opt/m11/start_preview.py deploy
+  artifacts:
+    reports:
+      dotenv: preview.env
+  environment:
+    name: review/mr-$CI_MERGE_REQUEST_IID
+    url: $PREVIEW_URL
+    on_stop: preview:destroy
+    auto_stop_in: 2 days
+
+preview:gate:
+  extends: [.mr_job, .aws_identity]
+  stage: preview
+  needs: [preview:deploy]
+  timeout: 20m
+  script:
+    - python /opt/m11/start_preview.py gate
+
+preview:deploy-infra:
+  extends: [.mr_job, .aws_identity]
+  stage: preview
+  timeout: 30m
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        - module11/release/**/*
+        - module11/infrastructure/**/*
+        - module11/pipeline/**/*
+        - module11/aws/**/*
+        - module11/gitlab/**/*
+        - module11/cli.py
+        - module11/__main__.py
+        - module11/requirements*.txt
+        - module11/requirements-pulumi.lock
+        - .gitlab-ci.yml
+      when: manual
+      allow_failure: true
+  script:
+    - python /opt/m11/start_preview.py deploy-infra
+  environment:
+    name: review-infra
+    deployment_tier: testing
+
+preview:destroy:
+  extends: [.mr_job, .aws_identity]
+  stage: preview
+  needs: []
+  timeout: 20m
+  variables:
+    GIT_STRATEGY: none
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: manual
+      allow_failure: true
+  script:
+    - python /opt/m11/start_preview.py destroy
+  environment:
+    name: review/mr-$CI_MERGE_REQUEST_IID
+    action: stop
+
+promote:production:
+  stage: promote
+  image:
+    name: "public.ecr.aws/aws-cli/aws-cli@sha256:749bfaf91d690b9a1768083822d620f96c19defdf9ca2dc227eb3695281fda5b"
+    entrypoint: [""]
+  id_tokens:
+    AWS_TOKEN:
+      aud: $M11_OIDC_AUD
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^harness\/v\d+$/ && $CI_COMMIT_TAG_MESSAGE !~ /approval: required/'
+  timeout: 60m
+  environment:
+    name: production
+    deployment_tier: production
+  script:
+    - sh module11/gitlab/promote.sh default
+
+promote:production-gated:
+  stage: promote
+  image:
+    name: "public.ecr.aws/aws-cli/aws-cli@sha256:749bfaf91d690b9a1768083822d620f96c19defdf9ca2dc227eb3695281fda5b"
+    entrypoint: [""]
+  id_tokens:
+    AWS_TOKEN:
+      aud: $M11_OIDC_AUD
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^harness\/v\d+$/ && $CI_COMMIT_TAG_MESSAGE =~ /approval: required/'
+  timeout: 60m
+  environment:
+    name: production-gated
+    deployment_tier: production
+  script:
+    - sh module11/gitlab/promote.sh required
+
+cleanup:previews:
+  extends: .aws_identity
+  stage: cleanup
+  image: $CI_REGISTRY_IMAGE/m11-ci:$M11_CI_IMAGE
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+  timeout: 30m
+  variables:
+    GIT_STRATEGY: none
+  script:
+    - python /opt/m11/start_preview.py cleanup

@@ -5,7 +5,7 @@
 
 # ISV partners (AWS Marketplace)
 redis==7.4.0            # Session memory — LangGraph checkpointer backend (Redis Cloud)
-pymongo==4.17.0         # Long-term semantic memory — Atlas Vector Search (MongoDB Atlas)
+pymongo==4.18.2         # Long-term semantic memory — Atlas Vector Search (MongoDB Atlas)
 neo4j==6.2.0            # Graph relationship memory (Neo4j Aura)
 
 # TLS trust store — provides Mozilla's CA bundle so Atlas/Aura certificate

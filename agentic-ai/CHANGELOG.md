@@ -3,6 +3,41 @@
 Changes to the AI Agent Learning Series code sample, grouped by the module
 release that shipped them.
 
+## Module 11 added
+
+Module 11 (`module11/`, `demos/module11_demo.py`, `tests/test_module11_*`) releases Module 10's DevOps
+Companion as a versioned harness: a sealed, content-addressed manifest, Pulumi stacks per stage, calibrated
+evaluation gates on GitLab merge requests and an AWS CodePipeline release, Vercel previews per MR, a canary with
+an automatic rollback controller, drift detection, and side-effect reconciliation. See `module11/README.md`.
+
+- **Presenting the demo.** `--explain` (or `M11_EXPLAIN=1`, off by default) gives the demo driver an audience screen:
+  a short panel before each step and none of the presenter's markers. `module11 status --all` shows `CANARY` for a
+  stage with a rollout in flight instead of `NOT READY`. Step 6a now stores the runtime session ID that
+  `scenario add --from-session` needs, and 6e falls back to the latest completed recommendation.
+
+Edits outside `module11/`, and why each was needed:
+
+- **Live-only by design.** Every other module runs standalone with mocked partners. Module 11 does not: its
+  subject is a real release on AWS, GitLab and Vercel, so a mock would show nothing true. This is a deliberate
+  break from the repository's mock-first convention. Without accounts you can still run its offline tests and
+  `python demos/module11_demo.py --replay-fixtures`, which renders committed, redacted captures of a real run
+  under a `REPLAY of real run <ids>` banner and needs no credentials.
+- `README.md`: the Module 11 row in the module table, the overview entry, the structure entry, the quick start,
+  the capability row, a Module 11 row in the "without AWS credentials" table, and one sentence after the mock-mode
+  statement that names the live-only exception and the `--replay-fixtures` path. The statement about Modules 1-10
+  is unchanged.
+- `tests/conftest.py`: an autouse `isolate_module11` fixture for `test_module11*` tests. It clears `M11_*`
+  variables and makes AWS client construction raise, so an offline Module 11 test can never reach an account
+  (the same pattern as `isolate_module10_export`).
+- `.env.example`: one line pointing to `module11/.env.example` (names only; values live in the git-ignored
+  `module11/.local/env.sh`).
+- Repository-root `.gitignore`: `/.venvs/` and `/.worktrees/`. `INSTALL.sh` creates virtual environments under
+  `.venvs/`, and the build used a git worktree under `.worktrees/`; neither belongs in a commit. Also
+  `/web_demo_captures/` and `/.cache/` (screen-capture output and tool caches when a run starts at the root).
+- `agentic-ai/.gitignore`: `.venvs/` and `.worktrees/`, because `module11/README.md` creates its venv at
+  `agentic-ai/.venvs/module11` (a plain `python -m venv` there would otherwise show up in `git status`), and
+  `web_demo_captures/` for screen-capture output.
+
 ## Module 11 release - maintenance of Modules 1-10
 
 ### Viewer-visible changes (webinar viewers will notice)
@@ -63,7 +98,7 @@ release that shipped them.
 - Root `requirements.txt` floors for `langchain` (>=1.3), `langsmith` (>=0.8.18) and `bedrock-agentcore` (>=1.15) stay low enough that the shared requirements still co-resolve with Module 7's exact pins.
 - Module 4 drops its `langchain-aws<1.4.0` cap and now uses `langchain-aws>=1.5,<2`, the same LangChain stack range as Modules 7 and 9. The old "1.4+ has breaking changes with ChatBedrock tool binding" note no longer holds: the full Module 4 demo was verified on langchain-aws 1.8.
 - Removed unused dependencies: `mapbox` (unmaintained since 2019; Module 5 calls the Mapbox REST API through `requests`), `gitpython`, `cfn-lint`, `langchain-community` and `strands-agents-tools`. None of them is imported anywhere.
-- Module 7 exact pins refreshed for security advisories: `anyio` 4.14.2, `h2` 4.4.1, `hpack` 4.2.0, `langgraph-checkpoint` 4.1.1, `langgraph-sdk` 0.3.15, `langsmith` 0.8.18 and `urllib3` 2.8.0. All other pins are unchanged.
+- Module 7 exact pins refreshed for security advisories: `anyio` 4.14.2, `h2` 4.4.1, `hpack` 4.2.0, `langgraph-checkpoint` 4.1.1, `langgraph-sdk` 0.3.15, `langsmith` 0.8.18 and `urllib3` 2.8.0, and `pymongo` 4.18.2 for advisories published after that refresh. All other pins are unchanged. `langgraph-sdk` stays at 0.3.15: its advisory fix (0.4.4) is outside the range `langgraph` 1.2.0 accepts, and Module 7 runs its graphs in process without the LangGraph Platform client.
 - `pytest` added to `module4/requirements.txt` and `module7/requirements.txt` (exact pins for Module 7), so the documented test commands work in those venvs.
 - `INSTALL.sh` now takes a family: `./INSTALL.sh [core|module4|module7|module10]` (default `core`). `core` installs the shared, Module 8 and Module 9 requirements for Modules 1-3, 5, 6, 8, 9, the routing agent, evaluation and orchestration; `module4` and `module7` create `module4/.venv` and `module7/.venv`; `module10` uses Python 3.13 and the Module 10 README install line. `VENV_DIR` and `PYTHON` override the defaults. The script checks the Python version and prints family-specific next steps.
 - `verify_installation.py` now covers every module: `python verify_installation.py [--family core|module4|module7|module10]`. It imports each module's key symbols in mock mode (no AWS calls), lists modules outside the family as SKIP with the `INSTALL.sh` target that provides them, and no longer requires `IMPLEMENTATION_SUMMARY.md`.
@@ -88,6 +123,7 @@ release that shipped them.
 - `scripts/invoke_agentcore.py` docstring and missing-ARN message say `agentcore deploy` (formerly `agentcore launch`), matching the corrected deploy steps.
 - The README "Maintenance" section lists the shared offline suites (`tests/test_http_servers.py`, `test_env_loaders.py`, `test_invoke_agentcore.py`, `test_check_bedrock_models.py`, plus `-k module4` / `-k module7` in those environments), and the Module 3 Quick Start adds `pytest tests/test_module3_templates.py` (needs Node.js).
 - `evaluation/ISV_INTEGRATION_GUIDE.md` lists the Patronus, Deepchecks and Comet ranges that `requirements.txt` now installs (it showed the old floors).
+- `module9/PARTNER_SETUP.md` prerequisites start with `cd` into your clone's `agentic-ai/`; they named a developer's absolute checkout path.
 - Module 10 operations docs (`module10/deployment/OPERATIONS.md`, `module10/deployment/README.md`, `module10/gateway/README.md`, `module10/README.md`), prose only:
   - Network exposure: why the Portkey security group allows `0.0.0.0/0` on 8443 (a `PUBLIC`-mode AgentCore Runtime egresses from unpredictable AWS addresses), the compensating controls (TLS, the bearer service token checked in `hosted.mjs`, the auto-stop schedule of two hours by default and at most 12, a new task IP on every start), and the production alternative (a VPC-mode runtime with a private gateway).
   - Log retention: AgentCore creates `/aws/bedrock-agentcore/runtimes/<agent_id>-<endpoint_name>` log groups that never expire; how to list them and set retention with `aws logs put-retention-policy`.
@@ -116,12 +152,12 @@ release that shipped them.
 
 Maintainer decision IDs (MD-NN) are in parentheses.
 
-- Bedrock model IDs. Every ID the code calls (`us.anthropic.claude-sonnet-4-6`, `us.anthropic.claude-haiku-4-5-20251001-v1:0`, `us.anthropic.claude-opus-4-5-20251101-v1:0`, `amazon.titan-embed-text-v2:0`, `us.openai.gpt-5.6-luna`, `us.openai.gpt-5.6-terra`) was verified ACTIVE with no Legacy date, and each answered a live call, so only the labels changed (MD-01, MD-02). Newer models were not swapped in, because that would change what the webinars showed. `scripts/check_bedrock_models.py` re-checks them each release (MD-26).
-- `AGENT_MOCK_MODE` is still shared by Modules 4, 6, 8 and Module 9's Auth0 layer, and no mock flag was renamed, because customers already use these names. The README and `.env.example` document the overlap instead (MD-20).
-- `create_react_agent` stays in Modules 2-9 (see Known deprecations), with `langgraph<2` caps (MD-19).
-- The Module 10 Portkey security group still allows `0.0.0.0/0` on port 8443, because a `PUBLIC`-mode AgentCore Runtime calls it from unpredictable AWS addresses. The compensating controls and the VPC-mode alternative are documented in `module10/deployment/OPERATIONS.md` and `module10/gateway/README.md` (MD-13).
-- The Module 1 local server from `bedrock-agentcore` (used when that package is installed) is not wrapped with the Host and Content-Type checks the other servers gained, because the same app object serves the deployed AgentCore Runtime and the change could not be verified by a deployment (MD-57). Run it only while you use it.
-- Upstream Portkey advisories at the pinned revision are documented, not patched, so the gateway keeps running pinned, unmodified upstream source (MD-14).
+- Bedrock model IDs. Every ID the code calls (`us.anthropic.claude-sonnet-4-6`, `us.anthropic.claude-haiku-4-5-20251001-v1:0`, `us.anthropic.claude-opus-4-5-20251101-v1:0`, `amazon.titan-embed-text-v2:0`, `us.openai.gpt-5.6-luna`, `us.openai.gpt-5.6-terra`) was verified ACTIVE with no Legacy date, and each answered a live call, so only the labels changed. Newer models were not swapped in, because that would change what the webinars showed. `scripts/check_bedrock_models.py` re-checks them each release.
+- `AGENT_MOCK_MODE` is still shared by Modules 4, 6, 8 and Module 9's Auth0 layer, and no mock flag was renamed, because customers already use these names. The README and `.env.example` document the overlap instead.
+- `create_react_agent` stays in Modules 2-9 (see Known deprecations), with `langgraph<2` caps.
+- The Module 10 Portkey security group still allows `0.0.0.0/0` on port 8443, because a `PUBLIC`-mode AgentCore Runtime calls it from unpredictable AWS addresses. The compensating controls and the VPC-mode alternative are documented in `module10/deployment/OPERATIONS.md` and `module10/gateway/README.md`.
+- The Module 1 local server from `bedrock-agentcore` (used when that package is installed) is not wrapped with the Host and Content-Type checks the other servers gained, because the same app object serves the deployed AgentCore Runtime and the change could not be verified by a deployment. Run it only while you use it.
+- Upstream Portkey advisories at the pinned revision are documented, not patched, so the gateway keeps running pinned, unmodified upstream source.
 
 ### Operators of an existing Module 10 deployment
 

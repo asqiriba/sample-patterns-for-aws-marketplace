@@ -1,0 +1,33 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+#
+# m11-preview: a trusted NO_SOURCE project started by `preview:*` MR jobs as
+# m11-gitlab-ci with PREVIEW_ACTION, PREVIEW_IID and PREVIEW_SHA only. Values are validated and never
+# echoed. It runs main's tooling (tooling/main.json, sha256-verified) on the MR's harness data; every
+# GitLab read and note goes through the m11-gitlab-notes broker (no GitLab token here).
+version: 0.2
+env:
+  shell: bash
+  variables:
+    PULUMI_SKIP_UPDATE_CHECK: "1"
+  exported-variables: [PREVIEW_URL, GATE_EXIT]
+phases:
+  build:
+    commands:
+      - |
+        echo "$PREVIEW_ACTION" | grep -Eq '^(deploy|gate|destroy)$' && echo "$PREVIEW_IID" | grep -Eq '^[0-9]{1,9}$' \
+          && echo "$PREVIEW_SHA" | grep -Eq '^[0-9a-f]{40}$' || { echo 'PreviewRejected("invalid input")'; exit 1; }
+      - |
+        python - <<'PY'
+        import boto3, hashlib, io, json, os, zipfile
+        s3 = boto3.client("s3"); bucket = os.environ["RELEASE_BUCKET"]
+        pointer = json.loads(s3.get_object(Bucket=bucket, Key="tooling/main.json")["Body"].read())
+        data = s3.get_object(Bucket=bucket, Key=pointer["key"])["Body"].read()
+        if hashlib.sha256(data).hexdigest() != pointer["sha256"]:
+            raise SystemExit("tooling archive sha256 mismatch")
+        zipfile.ZipFile(io.BytesIO(data)).extractall("/tmp/tooling")
+        PY
+      - cd /tmp/tooling && for p in harness policy; do ln -sfn /opt/m11/venv "module11/infrastructure/$p/venv"; done
+      - export GATE_EXIT=0; cd /tmp/tooling && python -m module11 pipeline preview --exports /tmp/preview.env || GATE_EXIT=$?
+      - test -f /tmp/preview.env && source /tmp/preview.env || true
+      - test "$GATE_EXIT" = "0"

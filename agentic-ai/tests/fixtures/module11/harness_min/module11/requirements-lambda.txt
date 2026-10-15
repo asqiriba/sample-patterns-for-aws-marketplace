@@ -1,0 +1,5 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+#
+# m11-sdk Lambda layer (python3.13). The release engines themselves are stdlib-only.
+boto3==1.43.108

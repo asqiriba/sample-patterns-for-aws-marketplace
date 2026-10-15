@@ -1,0 +1,10 @@
+{
+  "name": "search_runbooks",
+  "agents": [
+    "companion"
+  ],
+  "kind": "lambda",
+  "mutating": false,
+  "timeoutSeconds": 15,
+  "memoryMb": 512
+}

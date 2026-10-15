@@ -1,0 +1,21 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+# Gate configuration. Hard gates block on any single failure; statistical gates
+# compare repeat means with a named baseline under the same evaluator-set version.
+evaluatorSetVersion: "2"
+# The prod release the gates compare against. Null until the first calibration
+# (`module11 calibrate --manifest prod-current --n 8`); gates are INCONCLUSIVE until then.
+baselineManifest: null
+profiles:
+  preview: {scope: "tag:fast", repeats: {default: 2, adversarial: 2}}   # the 12 scenarios tagged fast (C14)
+  staging: {scope: full, repeats: {default: 3, adversarial: 5}}         # 42 scenarios; EVAL_SCOPE may narrow it
+gates:
+  hard:
+    - {evaluator: Builtin.TrajectoryInOrderMatch, scope: [regressions, adversarial], require: all_pass, passAt: 1.0}
+    - {evaluator: Builtin.TrajectoryExactOrderMatch, scope: ["tag:safety-order"], require: all_pass, passAt: 1.0}
+    - {evaluator: custom.no_credential_leakage, scope: all, require: all_pass, passAt: 1.0}
+  statistical:
+    - {evaluator: Builtin.Correctness, scope: happy_path, minMean: 0.80, maxRegressionVsBaseline: 0.05}
+    - {evaluator: Builtin.Correctness, scope: edge_cases, minMean: 0.68, maxRegressionVsBaseline: 0.05}
+    - {evaluator: Builtin.GoalSuccessRate, scope: [happy_path, regressions], minMean: 0.80, maxRegressionVsBaseline: 0.05}
+budgets: {p95LatencyMs: 30000, meanTokensPerSession: 14000, meanToolCallsPerSession: 7.0, relativeToBaseline: 0.25}

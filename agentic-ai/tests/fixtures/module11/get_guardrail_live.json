@@ -1,0 +1,76 @@
+{
+  "blockedInputMessaging": "This request was blocked by the DevOps Companion guardrail.",
+  "blockedOutputsMessaging": "The DevOps Companion response was blocked by its guardrail.",
+  "contentPolicy": {
+    "filters": [
+      {
+        "inputStrength": "MEDIUM",
+        "outputStrength": "MEDIUM",
+        "type": "VIOLENCE"
+      },
+      {
+        "inputStrength": "HIGH",
+        "outputStrength": "NONE",
+        "type": "PROMPT_ATTACK"
+      },
+      {
+        "inputStrength": "MEDIUM",
+        "outputStrength": "MEDIUM",
+        "type": "MISCONDUCT"
+      },
+      {
+        "inputStrength": "MEDIUM",
+        "outputStrength": "MEDIUM",
+        "type": "HATE"
+      },
+      {
+        "inputStrength": "HIGH",
+        "outputStrength": "HIGH",
+        "type": "SEXUAL"
+      },
+      {
+        "inputStrength": "LOW",
+        "outputStrength": "LOW",
+        "type": "INSULTS"
+      }
+    ],
+    "tier": {
+      "tierName": "CLASSIC"
+    }
+  },
+  "createdAt": "2026-10-06T00:00:00Z",
+  "description": "m11 3a2ee9a2134e029c",
+  "failureRecommendations": [],
+  "guardrailArn": "arn:aws:bedrock:us-east-1:111122223333:guardrail/abcdefgh1234",
+  "guardrailId": "abcdefgh1234",
+  "name": "m11-prod-companion",
+  "sensitiveInformationPolicy": {
+    "piiEntities": [
+      {
+        "action": "ANONYMIZE",
+        "type": "EMAIL"
+      },
+      {
+        "action": "ANONYMIZE",
+        "type": "PHONE"
+      },
+      {
+        "action": "ANONYMIZE",
+        "type": "AWS_ACCESS_KEY"
+      },
+      {
+        "action": "ANONYMIZE",
+        "type": "AWS_SECRET_KEY"
+      },
+      {
+        "action": "ANONYMIZE",
+        "type": "PASSWORD"
+      }
+    ],
+    "regexes": []
+  },
+  "status": "READY",
+  "statusReasons": [],
+  "updatedAt": "2026-10-06T00:00:00Z",
+  "version": "1"
+}

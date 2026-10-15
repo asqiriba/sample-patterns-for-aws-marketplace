@@ -1,0 +1,9 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+# Token prices used by the controller's cost-per-session signal and the gate report
+# USD per 1,000 tokens, keyed by models.yaml modelId. Null values are
+# filled from the AWS Price List API (`module11/aws/pricing.py`) before the first rollout;
+# the cost signal is "insufficient" while a price is null.
+currency: USD
+models:
+  us.openai.gpt-5.6-luna: {inputPer1kTokens: null, cachedInputPer1kTokens: null, outputPer1kTokens: null}

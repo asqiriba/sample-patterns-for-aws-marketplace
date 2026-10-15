@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "query": {
+      "type": "string",
+      "description": "What to look for, for example 'checkout 502 after deploy'.",
+      "minLength": 3,
+      "maxLength": 300
+    }
+  },
+  "required": [
+    "query"
+  ],
+  "additionalProperties": false
+}

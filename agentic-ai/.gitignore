@@ -224,6 +224,9 @@ __marimo__/
 
 # Local-only live credential helper (contains real secrets — never commit)
 setup_live_env.sh
+# Local virtualenvs and git worktrees created from agentic-ai/ (module11/README.md uses .venvs/module11)
+.venvs/
+.worktrees/
 # Module 9 local virtualenvs
 .venv-m9/
 # Module 10 local virtualenv (when .venv already holds the Python 3.12 core env)
@@ -234,3 +237,6 @@ setup_live_env.sh
 
 # Virtualenv marker file (was previously committed by mistake)
 pyvenv.cfg
+
+# Screen-capture output (videos, frames, per-act recordings)
+web_demo_captures/

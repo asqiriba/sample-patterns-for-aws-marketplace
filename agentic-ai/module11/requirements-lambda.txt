@@ -1,0 +1,7 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+#
+# m11-sdk Lambda layer (python3.13). The release engines are stdlib-only except numpy, which the
+# controller's exact stratified test (release/stats.py) uses.
+boto3==1.43.108
+numpy==2.5.3

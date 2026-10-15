@@ -505,7 +505,7 @@ def test_module2_analysis_uses_messages_input(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# Module 1: request-supplied Region validation (S-06)
+# Module 1: request-supplied Region validation
 # ---------------------------------------------------------------------------
 
 @pytest.mark.parametrize(

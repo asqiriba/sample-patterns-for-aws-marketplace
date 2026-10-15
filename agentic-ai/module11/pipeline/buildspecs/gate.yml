@@ -1,0 +1,17 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+#
+# m11-gate: the change plan's scope and repeats on staging against that
+# scope's baseline; the report goes to evaluations/ and, through the m11-gitlab-notes broker, onto
+# the tag commit. A FAIL or INCONCLUSIVE fails the action, so the release never reaches Approval.
+# For `rebaseline` and `evalset` releases it runs that procedure against prod instead.
+version: 0.2
+env:
+  shell: bash
+  variables:
+    PULUMI_SKIP_UPDATE_CHECK: "1"
+phases:
+  build:
+    commands:
+      - cd "$CODEBUILD_SRC_DIR"
+      - python -m module11 pipeline gate

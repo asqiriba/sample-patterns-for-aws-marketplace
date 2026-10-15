@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "m11.manifest/2",
+  "title": "Module 11 release manifest (declared or deployed)",
+  "type": "object",
+  "required": ["schema", "manifestVersion", "harness", "git", "digests", "model", "orchestration", "build", "flags",
+               "guardrail", "evaluation"],
+  "properties": {
+    "schema": {"const": "m11.manifest/2"},
+    "manifestVersion": {"type": "string", "pattern": "^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\dZ/[0-9a-f]{7}$"},
+    "harness": {"type": "string", "pattern": "^[a-z0-9-]{1,64}$"},
+    "git": {
+      "type": "object", "required": ["commit"],
+      "properties": {
+        "commit": {"type": "string", "pattern": "^[0-9a-f]{7,40}$"},
+        "tag": {"type": ["string", "null"]},
+        "subject": {"type": "string", "maxLength": 300}
+      }
+    },
+    "digests": {
+      "type": "object",
+      "required": ["behavior", "release", "runtime", "artifactCount", "behaviorCount", "runtimeCount"],
+      "properties": {
+        "behavior": {"$ref": "#/$defs/sha"}, "release": {"$ref": "#/$defs/sha"}, "runtime": {"$ref": "#/$defs/sha"},
+        "artifactCount": {"type": "integer", "minimum": 1},
+        "behaviorCount": {"type": "integer", "minimum": 1},
+        "runtimeCount": {"type": "integer", "minimum": 1}
+      }
+    },
+    "artifacts": {"type": "object", "additionalProperties": {"$ref": "#/$defs/sha"}},
+    "artifactsSha256": {"$ref": "#/$defs/sha"},
+    "s3Uri": {"type": "string", "pattern": "^s3://"},
+    "model": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object", "required": ["modelId", "maxOutputTokens"],
+        "properties": {"modelId": {"type": "string"}, "maxOutputTokens": {"type": "integer"},
+                       "reasoningEffort": {"type": "string"}}
+      }
+    },
+    "orchestration": {
+      "type": "object", "required": ["maxTurns", "maxToolCalls", "deadlineSeconds"],
+      "properties": {"maxTurns": {"type": "integer"}, "maxToolCalls": {"type": "integer"},
+                     "deadlineSeconds": {"type": "integer"}}
+    },
+    "tools": {
+      "type": "object",
+      "additionalProperties": {"type": "object", "properties": {"timeoutSeconds": {"type": ["integer", "null"]},
+                                                              "memoryMb": {"type": ["integer", "null"]}}}
+    },
+    "retrieval": {"type": "array", "items": {"type": "object", "required": ["corpus"]}},
+    "externalSurfaces": {"type": "array", "items": {"type": "object", "required": ["id", "kind"]}},
+    "build": {
+      "type": "object", "required": ["imageContext", "handlers", "bundleComponent"],
+      "properties": {
+        "imageDigest": {"anyOf": [{"$ref": "#/$defs/sha"}, {"type": "null"}]},
+        "imageContext": {"$ref": "#/$defs/sha"},
+        "layers": {"type": "object"},
+        "handlers": {
+          "type": "object",
+          "additionalProperties": {"type": "object", "required": ["codeSha256", "s3Key"],
+                                   "properties": {"codeSha256": {"type": "string"}, "s3Key": {"type": "string"}}}
+        },
+        "bundleComponent": {"type": "object", "required": ["s3Key", "sha256"],
+                            "properties": {"s3Key": {"type": "string"}, "sha256": {"$ref": "#/$defs/sha"}}}
+      }
+    },
+    "flags": {"type": "object", "required": ["sha256", "flagKeys"]},
+    "guardrail": {"type": "object", "required": ["definitionSha256"],
+                  "properties": {"definitionSha256": {"anyOf": [{"$ref": "#/$defs/sha"}, {"type": "null"}]}}},
+    "evaluation": {"type": "object", "required": ["suiteSha256", "evaluatorSetVersion"]},
+    "deployment": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["runtimeVersion", "endpoints"],
+        "properties": {
+          "runtimeVersion": {"type": "string", "pattern": "^\\d+$"},
+          "endpoints": {"type": "object"},
+          "bundle": {"type": "object", "properties": {"componentSha256": {"$ref": "#/$defs/sha"}}},
+          "runtimeConfigSha256": {"$ref": "#/$defs/sha"},
+          "runtimeIdentity": {"$ref": "#/$defs/sha"},
+          "toolArns": {"type": "object"},
+          "pinsUri": {"type": "string", "pattern": "^s3://"}
+        }
+      }
+    }
+  },
+  "$defs": {"sha": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}}
+}

@@ -18,12 +18,15 @@ This repository contains multiple modules demonstrating different agent framewor
 | **8** | Agent identity and access management | Python (Auth0 device flow, JWKS, MCP); no agent framework | Auth0, CyberArk |
 | **9** | Data pipelines and lineage: governed, fresh, traceable knowledge | LangGraph | Confluent Cloud, Databricks |
 | **10** | Agent exposure, capability rollout, model routing, and trace inspection | OpenAI SDK (Responses API) on Amazon Bedrock; Strands adapter for hosted-partner live mode | LaunchDarkly, Portkey AI, Logz.io |
-<!-- MODULE 11: table row added by the Module 11 release -->
+| **11** | MLOps and the agent development lifecycle: versioned, gated, progressively delivered releases | OpenAI SDK on Bedrock (Module 10 loop), Pulumi | GitLab, Vercel |
 
 Partner integrations run as in-process mocks, so you need no partner accounts
 to run any module standalone. Demos that use an LLM still call Amazon Bedrock
 with your AWS credentials, even in mock mode. See each module's `README.md` for
-its own quick start and live partner setup.
+its own quick start and live partner setup. Module 11 is the exception by
+design: it is live-only, because its subject is a real release on AWS. Without
+accounts, you can still run its offline tests and replay a real run with
+`--replay-fixtures`.
 
 | Demo | Without AWS credentials | Notes |
 | --- | --- | --- |
@@ -31,6 +34,7 @@ its own quick start and live partner setup.
 | Module 5, Module 9 | Degrades gracefully | Sections that call Bedrock report the failure and the demo continues |
 | Modules 1, 2, 4 and 7, Module 10 `--mode local` | Needs Bedrock | The agent itself is the LLM loop |
 | Module 3 | Needs Bedrock for Section 9 | Sections 1-8 run offline (template CDK generation, mock judges); Section 9 makes a live routing call |
+| Module 11 | Live only: AWS, GitLab, Vercel | Offline: `pytest tests/test_module11_*.py`, and `python demos/module11_demo.py --replay-fixtures` (committed, redacted captures of a real run, under a REPLAY banner) |
 
 ---
 
@@ -193,7 +197,14 @@ rolls out capabilities with LaunchDarkly, routes models through Portkey, and
 inspects traces in Logz.io, in mock, local or cloud mode.
 [See module10/README.md](module10/README.md)
 
-<!-- MODULE 11: overview entry added by the Module 11 release -->
+### Module 11: MLOps and the Agent Development Lifecycle
+Releases Module 10's DevOps Companion as a harness: every behavior input is a
+file, sealed into one content-addressed manifest, declared in Pulumi, gated by
+calibrated evaluations on GitLab merge requests and a CodePipeline release,
+previewed per MR on Vercel, and delivered by canary with an automatic rollback
+controller, drift detection and side-effect reconciliation. Live only (AWS,
+GitLab, Vercel); offline tests and a replay of a real run need no account.
+[See module11/README.md](module11/README.md)
 
 ---
 
@@ -233,7 +244,11 @@ agentic-ai/
 ├── requirements.txt            # Shared dependencies (core family)
 └── moduleN/requirements.txt    # Module-specific dependencies where needed
 ```
-<!-- MODULE 11: structure entry -->
+Module 11 adds one directory next to the others:
+
+```
+├── module11/                   # MLOps: harness-in-code, manifest, gates, progressive delivery
+```
 
 ---
 
@@ -383,7 +398,22 @@ AGENT_MOCK_REPO=true pytest tests/test_routing_agent.py -v
 RUN_INTEGRATION_TESTS=true pytest tests/test_routing_agent.py -k live -v
 ```
 
-<!-- MODULE 11: quick start added by the Module 11 release -->
+### Module 11: MLOps and the Agent Development Lifecycle
+
+Module 11 is live-only: it releases Module 10's cloud deployment through AWS,
+GitLab and Vercel. Set it up with [module11/README.md](module11/README.md).
+Without accounts, run the offline parts:
+
+```bash
+# Python 3.13 venv at .venvs/module11 with module11/requirements.txt and
+# module11/requirements-pulumi.lock (module11/README.md, "Python environment")
+python -m pytest tests/test_module11_*.py -q
+node --test tests/test_module11_*.mjs            # Node.js 24
+python -m module11 check                         # expect 0 error(s), 0 warning(s)
+
+# Replay a real run from the committed, redacted captures (no credentials)
+python demos/module11_demo.py --replay-fixtures --no-pause
+```
 
 ---
 
@@ -533,7 +563,7 @@ durable. The specialist agents work together in one workflow:
 | Data pipelines, lineage, governed retrieval | Module 9 |
 | Agent exposure, capability rollout, model routing, trace inspection | Module 10 |
 | Production CloudWatch / X-Ray monitoring | Module 12 (planned) |
-<!-- MODULE 11: capability rows added by the Module 11 release -->
+| Release management: harness manifest, evaluation gates, progressive delivery, rollback, drift | Module 11 |
 
 ## Maintenance
 

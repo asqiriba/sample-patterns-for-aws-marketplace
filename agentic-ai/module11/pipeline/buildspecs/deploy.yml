@@ -1,0 +1,20 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+#
+# m11-deploy (7): `release deploy` or `release prune` for STAGE
+# (staging | prod), run as m11-<stage>-deployer; the smoke test runs as the stage's eval runner.
+# The Production stage's step times are written to the build log for the pipeline timing table.
+version: 0.2
+env:
+  shell: bash
+  variables:
+    PULUMI_SKIP_UPDATE_CHECK: "1"
+    ACTION: deploy
+phases:
+  build:
+    commands:
+      - cd "$CODEBUILD_SRC_DIR"
+      - echo "$STAGE" | grep -Eq '^(staging|prod)$'
+      - echo "$ACTION" | grep -Eq '^(deploy|prune)$'
+      - for p in harness platform policy partners; do ln -sfn /opt/m11/venv "module11/infrastructure/$p/venv"; done
+      - python -m module11 pipeline deploy --stage "$STAGE" --action "$ACTION"

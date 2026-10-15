@@ -1,0 +1,21 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+# Bedrock guardrail in Module 5's GuardrailPolicy vocabulary (check C11).
+# release/guardrail.py projects it to CreateGuardrail fields; its definitionSha256 is pinned
+# in the manifest and watched by drift.
+pii_handling: ANONYMIZE
+pii_entities: [EMAIL, PHONE, AWS_ACCESS_KEY, AWS_SECRET_KEY, PASSWORD]
+# No denied topic: a Bedrock denied-topic classifier for "production changes" blocked 18 of the 42
+# scenarios (ordinary incident questions mention deploys and rollbacks). The
+# companion prompt already forbids claiming any executed change, and the trajectory gate measures it.
+denied_topics: []
+content_filters:
+  PROMPT_ATTACK: HIGH
+  MISCONDUCT: MEDIUM
+  VIOLENCE: MEDIUM
+  HATE: MEDIUM
+  INSULTS: LOW
+  SEXUAL: HIGH
+word_filters: []
+blocked_input_messaging: This request was blocked by the DevOps Companion guardrail.
+blocked_outputs_messaging: The DevOps Companion response was blocked by its guardrail.

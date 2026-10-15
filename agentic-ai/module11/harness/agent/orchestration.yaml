@@ -1,0 +1,17 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+# Agent loop limits. Module 10's _run_agent hard-coded these; here they are
+# behavior artifacts: a change is a reviewed, gated release (change type `orchestration`).
+maxTurns: 6
+maxToolCalls: 10
+deadlineSeconds: 150
+# Module 10's loop raises AgentRunError when a run ends without these tools. Only
+# get_deployment_history is required for the companion: skipping a runbook is a behavior
+# the trajectory gate measures, not a crash the loop prevents.
+requiredTools:
+  companion: [get_deployment_history]
+  planner: [get_blast_radius, check_rollback_readiness]
+# C5: tools offered to an agent but never referenced (backticked) in its prompt.
+allowUnreferenced: []
+# C8: values for {{var}} placeholders in prompts (none in the demo prompts).
+promptVars: {}

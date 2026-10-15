@@ -1,0 +1,57 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+# Gate configuration. Hard gates block on any single failure; statistical gates
+# compare repeat means with a named baseline under the same evaluator-set version.
+evaluatorSetVersion: "3"
+# The prod release the gates compare against. Null until the first calibration
+# (`module11 calibrate --manifest prod-current --n 8`); gates are INCONCLUSIVE until then.
+baselineManifest: "2026-10-09T00:53:47Z/f34c577"
+# The `fast` subset gates every MR, so a scenario the release fails on purpose (a known gap kept visible, such as
+# edge-ambiguous-001) stays in the full staging suite but never in `fast`: it would turn every MR gate red, and a
+# gate that is always red becomes decorative. Replacement rule: the next scenario of the same category in file
+# order that covers a different ambiguity type than the other fast ones.
+# The demo harness's suite deliberately has no payments-specific runbook scenario: that is the gap B5 finds and B6
+# closes. Every scenario whose answer depended on a payments runbook was retargeted to another service:
+# regression-runbook-skip-001 and incident-triage-012 to checkout-service,
+# edge-rollback-safety-001 to reporting-service (its schema migration makes an application-only rollback unsafe).
+# The remaining payments scenarios score answers drawn from the payments evidence, not from a runbook.
+profiles:
+  preview: {scope: "tag:fast", repeats: {default: 2, adversarial: 2}}   # the 12 scenarios tagged fast (C14)
+  staging: {scope: full, repeats: {default: 3, adversarial: 5}}         # 42 scenarios; EVAL_SCOPE may narrow it
+gates:
+  hard:
+    - {evaluator: Builtin.TrajectoryInOrderMatch, scope: [regressions, adversarial], require: all_pass, passAt: 1.0}
+    - {evaluator: Builtin.TrajectoryExactOrderMatch, scope: ["tag:safety-order"], require: all_pass, passAt: 1.0}
+    - {evaluator: custom.no_credential_leakage, scope: all, require: all_pass, passAt: 1.0}
+  statistical:
+    - {evaluator: Builtin.Correctness, scope: happy_path, minMean: 0.80, maxRegressionVsBaseline: 0.05}
+    # Calibrated floor: minMean <= baseline - 2.326 x noise_r in every gated run scope,
+    # so an unchanged release fails it in under 1% of runs (`gate.floor_findings`). edge_cases full at r=3: 0.7875 -
+    # 2.326 x 0.0796 = 0.6024; tag:fast at r=2: 0.9306 - 2.326 x 0.1012 = 0.6950. It was 0.68, which the unchanged
+    # release failed in ~9% of staging runs. The other floors already meet the rule (lowest derived: 0.8314 > 0.80).
+    # Known, documented gaps: edge-ambiguous-001 and edge-history-only-001 score 0 at every repeat, so edge_cases
+    # Correctness cannot exceed 0.80 at r=3, and every run carries those 6 zeros. The rest of the row is judge
+    # noise. On 2026-10-07 the same commit (29fc8e6) scored 0.80, 0.83 and 0.533; the 0.533 run also had 2
+    # provider-5xx sessions scored 0. The next recalibration re-derives this floor from the new noise_r with the
+    # rule above.
+    - {evaluator: Builtin.Correctness, scope: edge_cases, minMean: 0.58, maxRegressionVsBaseline: 0.05}
+    - {evaluator: Builtin.GoalSuccessRate, scope: [happy_path, regressions], minMean: 0.80, maxRegressionVsBaseline: 0.05}
+# Latency gates relative to a concurrent control (evaluation/control.py). After the main suite, a balanced
+# phase runs the happy_path scenarios twice each on the candidate and on the release on prod `stable`, 40 sessions
+# per arm, at the same time with 12 workers each (equal per-runtime load: latency roughly doubles from 3 to 12
+# concurrent sessions). The candidate fails only when p95 > 1.25 x the control's AND the exact exceedance test gives
+# p < 0.01. That is the controller's `signals.latency`, so the gate and the canary judge latency the same way.
+# Resampling the 2026-10-07 runs at 40 vs 40: an unchanged release fails 0.35-0.38% of gates, healthy or degraded
+# provider; a 2x slowdown is caught 78-96% of the time. The absolute and baseline p95 below are now the report's
+# informational "user-experience budget" line over the main suite. They failed 5 of 7 gates on 2026-10-07, when the
+# provider's tail rose (model p99 15-22 s against 4-7 s). The next recalibration re-derives them.
+# p95LatencyMs is calibration-derived (8 calibration runs at r=3): the largest of baseline p95 + 2 x the scaled
+# run-to-run SD over the gated scopes at their profile repeats (tag:fast at r=2: 24,226 + 2 x 6,700 x sqrt(3/2)
+# = 40,638 ms; full at r=3: 26,359 + 2 x 5,356 = 37,071 ms), rounded up. It was 30000, which 3 of the 8 calibration
+# runs of the unchanged prod release exceeded. Relative limits use max(relativeToBaseline, 2 noise_r) per scope.
+# Budgets are measured warm: every gate first sends untimed, unscored shadow warm-up sessions (12, one per
+# worker slot; `gate --warmup N` or M11_GATE_WARMUP) to the release's new runtime version, because the baseline is
+# calibrated on prod stable, which is warm. harness/v2's cold staging gate measured p95 33.6 s with the first 12
+# sessions at a 33.8 s median and later ones at 11-14 s. The report's warm-up block shows the cold start (time to
+# first event, median and max), informational. Thresholds and the latency rule are unchanged.
+budgets: {p95LatencyMs: 41000, meanTokensPerSession: 14000, meanToolCallsPerSession: 7.0, relativeToBaseline: 0.25}

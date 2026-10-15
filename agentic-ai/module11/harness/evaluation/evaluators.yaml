@@ -1,0 +1,35 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+# The evaluator set. Changing it is kind `evaluator_set`: it needs a quality
+# approval plus a harness-owners or platform approval, bumps `version`, and runs the
+# evaluator-set procedure (`module11 evalset rebaseline`), never an ordinary gate.
+# Version 3: adds Builtin.Helpfulness as an informational ruler (no threshold gates it yet) and
+# records the service's built-in evaluator fingerprint, so a silent judge-list change shows in
+# `module11 drift check --external`. The v2 -> v3 record is evalset-changes/2-3.json.
+version: "3"
+evaluators:
+  - id: Builtin.GoalSuccessRate
+    level: session
+    kind: builtin
+  - id: Builtin.Correctness
+    level: trace
+    kind: builtin
+  - id: Builtin.Helpfulness
+    level: trace
+    kind: builtin
+  - id: Builtin.TrajectoryInOrderMatch
+    level: session
+    kind: builtin
+  - id: Builtin.TrajectoryExactOrderMatch
+    level: session
+    kind: builtin
+  - id: custom.no_credential_leakage
+    level: session
+    kind: code
+    handler: evaluators/no_credential_leakage/handler.py
+# Logical ID -> real AgentcoreEvaluator ID per stage, filled from each stack's
+# `evaluatorIds` output at deploy time. Builtin IDs map to themselves.
+stageIds: {}
+# Fingerprint of the service's built-in evaluator definitions, recorded by the evaluator-set
+# procedure so a silent judge upgrade is detected as a set change (hash of the sorted Builtin {id, level} list).
+builtinFingerprint: "sha256:48e6a8ecdf1fa19da65c5bad003c860ef236fe3acec152751d1594143249d07f"

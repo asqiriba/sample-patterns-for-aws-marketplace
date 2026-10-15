@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "service_name": {
+      "type": "string",
+      "description": "Service name, for example checkout-service.",
+      "pattern": "^[a-z0-9-]{3,64}$"
+    }
+  },
+  "required": [
+    "service_name"
+  ],
+  "additionalProperties": false
+}

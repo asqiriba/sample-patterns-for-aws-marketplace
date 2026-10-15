@@ -1,0 +1,13 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+#
+# Module 11 tooling: release engines, CLI (python -m module11), offline tests.
+# Install together with requirements-pulumi.lock for the Pulumi programs.
+boto3==1.43.108
+PyYAML==6.0.3
+jsonschema==4.26.0
+pytest==9.1.1
+rich==14.2.0
+launchdarkly-server-sdk==9.18.0
+# Exact stratified test and the seeded rollout simulator (release/stats.py, rollout_sim.py).
+numpy==2.5.3

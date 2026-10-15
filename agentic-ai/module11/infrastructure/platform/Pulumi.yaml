@@ -1,0 +1,13 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+# m11-platform (stack `shared`): ECR, release and pipeline-artifact buckets, the image build,
+# deployer / eval-runner / operator roles, the mr-* boundary and the shared-outputs parameter
+# The first apply builds the foundation with enablePipeline=false.
+# State: the self-managed S3 backend with the KMS secrets provider.
+name: m11-platform
+description: Module 11 shared platform (DevOps Companion release system)
+runtime:
+  name: python
+  options:
+    toolchain: pip
+    virtualenv: venv

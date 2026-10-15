@@ -1,0 +1,12 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+#
+# m11-ci image for GitLab MR jobs: everything `python -m module11 ci validate` imports.
+boto3==1.43.108
+PyYAML==6.0.3
+jsonschema==4.26.0
+pytest==9.1.1
+rich==14.2.0
+launchdarkly-server-sdk==9.18.0
+# Exact stratified test and the seeded rollout simulator (release/stats.py, rollout_sim.py).
+numpy==2.5.3

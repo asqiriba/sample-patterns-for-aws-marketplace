@@ -1,0 +1,10 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+#
+# AgentCore Runtime container image (python:3.13.12-slim-bookworm).
+openai[bedrock]==3.24.0
+launchdarkly-server-sdk==9.18.0
+boto3==1.43.108
+aws-opentelemetry-distro==0.21.0
+jsonschema==4.26.0
+PyYAML==6.0.3
